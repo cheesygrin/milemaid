@@ -1,3 +1,11 @@
+# =============================================================================
+# PUBLIC PORTFOLIO REPO — MILEMAID ONLY
+# =============================================================================
+# This is a dedicated public open-source / portfolio repository.
+# DO NOT add files from any other projects here.
+# See AGENTS.md and PORTFOLIO_PUBLIC_ONLY.md at the root.
+# =============================================================================
+
 # Miscellaneous
 *.class
 *.log

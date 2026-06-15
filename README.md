@@ -1,5 +1,10 @@
 # MileMaid
 
+> **⚠️ PUBLIC PORTFOLIO REPOSITORY ONLY**  
+> This is a dedicated public open-source repo.  
+> **Strictly no unrelated projects, client work, or future projects are allowed in this directory or git history.**  
+> See `AGENTS.md` and `PORTFOLIO_PUBLIC_ONLY.md` for rules (especially important for AI agents).
+
 **Automatic background mileage tracking. Professional IRS-ready reports. Half the price of MileIQ.**
 
 MileMaid runs silently in the background, detects every drive using smart motion + GPS, and produces clean, multi-page PDF reports you can hand to your accountant.
