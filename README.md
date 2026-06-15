@@ -1,9 +1,9 @@
 # MileMaid
 
 > **⚠️ PUBLIC PORTFOLIO REPOSITORY ONLY**  
-> This is a dedicated public open-source repo.  
-> **Strictly no unrelated projects, client work, or future projects are allowed in this directory or git history.**  
-> See `AGENTS.md` and `PORTFOLIO_PUBLIC_ONLY.md` for rules (especially important for AI agents).
+> **Location:** `~/Projects/portfolio/milemaid` (public work goes under `portfolio/`)  
+> **Strictly no unrelated projects, client work, or future projects allowed here.**  
+> Read `AGENTS.md` + `PORTFOLIO_PUBLIC_ONLY.md` — especially important when vibe coding with AI.
 
 **Automatic background mileage tracking. Professional IRS-ready reports. Half the price of MileIQ.**
 
