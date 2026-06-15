@@ -3,8 +3,8 @@
 > **⚠️ PUBLIC PORTFOLIO REPOSITORY ONLY**  
 > **Location:** `~/Projects/portfolio/milemaid` (public work goes under `portfolio/`)  
 > **Strictly no unrelated projects, client work, or future projects allowed here.**  
-> **Never commit real mileage logs, GPS exports, or trip data — see [Vibe coding rules](#vibe-coding-with-ai--never-publish-private-mileage-data) below.**  
-> Read `AGENTS.md` + `PORTFOLIO_PUBLIC_ONLY.md` — especially important when vibe coding with AI.
+> **Never commit real mileage logs, GPS exports, or trip data — see [Data privacy policy](#data-privacy--public-repository-policy) below.**  
+> Read `AGENTS.md` and `PORTFOLIO_PUBLIC_ONLY.md` before contributing or using AI tools in this repo.
 
 **Automatic background mileage tracking. Professional IRS-ready reports. Half the price of MileIQ.**
 
@@ -16,11 +16,11 @@ No buttons to press. No subscriptions to MileIQ's $14/month.
 
 ---
 
-## Vibe Coding with AI — Never Publish Private Mileage Data
+## Data Privacy & Public Repository Policy
 
-MileMaid tracks **where you drive**. That is personal, often legally sensitive, and must **never** end up in this public GitHub repo. AI-assisted "vibe coding" makes accidental leaks common — an export dropped into the folder, a JSON paste for a quick bug repro, a screenshot committed to test PDF layout.
+MileMaid tracks **where you drive**. That data is personal and often legally sensitive. It must **never** be committed to this public GitHub repository. Common mistakes include adding an exported report for debugging, pasting a JSON dump to reproduce a bug, or committing a screenshot used to test PDF layout.
 
-**If you are human or an AI agent working in this repo, treat the following as hard rules:**
+**All contributors — including anyone using AI-assisted development tools — must follow these rules:**
 
 ### Never commit to git
 

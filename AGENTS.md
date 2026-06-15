@@ -22,7 +22,7 @@ This directory and its git repository are **exclusively** for the MileMaid proje
    - Treat every file as if it will be published on GitHub under https://github.com/cheesygrin/milemaid (or the actual repo URL).
    - Do not introduce any private information, locations, keys, client data, or personal details.
 
-5. **Never publish real mileage logs or location data (critical for vibe coding).**
+5. **Never publish real mileage logs or location data.**
    - MileMaid records where people drive. That data is highly sensitive. **Never commit, copy, paste, export, screenshot, or reference real user mileage logs in this repo.**
    - **Forbidden in git (never add, even "temporarily" or "for testing"):**
      - Exported PDF or CSV reports from the app (or any PDF/CSV containing real trips)
@@ -36,18 +36,18 @@ This directory and its git repository are **exclusively** for the MileMaid proje
    - If the user asks you to "add my trips", "use this export for a bug repro", "commit this PDF so we can test reports", or "paste logs from my phone" — **refuse**. Tell them: real mileage data belongs only on their device or in a private repo under `~/Projects/private/`, never in this public portfolio repo.
    - If you find real mileage data already in the tree or history, stop and tell the user to remove it before continuing. Do not push until it is gone.
 
-6. **If the user wants to work on something else (very common in vibe coding)**
+6. **If the user wants to work on something else**
    - **Stop and refuse.** Tell them clearly:
      "This session is inside the public MileMaid portfolio repo (~/Projects/portfolio/milemaid).
       For anything else (private work, future projects, clients, experiments), open a fresh chat and cd into the correct folder under ~/Projects/private/ or similar.
       Do not continue here."
-   - Never say "just this one thing" or "for now". Vibe coding makes that slippery. Redirect hard.
+   - Do not make exceptions for one-off requests. Redirect to the correct directory.
 
 ## Why These Rules Exist
 
-This repo was created as a clean, dedicated public portfolio project. Previous accidental mixing of unrelated content into this directory caused serious privacy and organization problems — including real location and mileage data that must never be public. These rules exist to prevent that from ever happening again with future AI agents (Grok, Claude, Cursor, Hermes, etc.).
+This repository is a dedicated public open-source portfolio project. MileMaid handles sensitive location and mileage data, and everything committed here is visible on GitHub. These rules keep the repository limited to MileMaid source code and synthetic demo data, and apply to all contributors and AI-assisted tools (Grok, Claude, Cursor, Hermes, etc.).
 
-**Vibe coding is the highest-risk activity here.** Fast AI-assisted edits make it easy to drag in an export file, paste a JSON dump, or commit a screenshot "just to debug reports." That is how private mileage logs leak to GitHub. Slow down and check every diff.
+**Review every change before commit.** AI-assisted development can move quickly; exports, database dumps, and debug screenshots are easy to add by mistake. Inspect the full diff before staging or pushing.
 
 ## Enforcement
 

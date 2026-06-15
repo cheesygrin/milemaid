@@ -17,7 +17,7 @@ This includes:
 - Other apps or experiments
 - Any files containing locations, private data, or unrelated business information
 
-If you see files here that do not belong to MileMaid, they are mistakes and must be removed immediately.
+If you see files here that do not belong to MileMaid, remove them before committing or pushing.
 
 ## For AI Agents and Tools
 
@@ -29,7 +29,7 @@ This folder must stay 100% clean because it is pushed publicly.
 
 If you are working on anything besides MileMaid, use a completely separate directory (ideally under a different parent folder such as `portfolio/` vs `private/` or `clients/`).
 
-Do not work on multiple projects in the same terminal session or AI chat without explicitly changing directories and confirming the context.
+Do not work on multiple projects in the same terminal session or AI-assisted session without explicitly changing directories and confirming the context.
 
 Last updated: 2026
 
