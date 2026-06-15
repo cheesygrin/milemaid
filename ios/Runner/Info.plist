@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>MileMaid</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>milemaid</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(FLUTTER_BUILD_NAME)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+	<!-- Background location tracking (CRITICAL for automatic mileage) -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+	</array>
+
+	<!-- App uses no non-exempt encryption (HTTPS only) -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<!-- Privacy usage descriptions -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MileMaid needs your location while the app is open to start detecting drives accurately.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>MileMaid needs to track your drives even when the app is in the background or closed to automatically log mileage for taxes and IRS reports.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>MileMaid requires always-on location access so it can detect trip start and end without you having to press any buttons.</string>
+
+	<!-- Google Maps iOS key -->
+	<!-- TODO: Replace with your Google Maps API Key (enable Maps SDK for iOS) -->
+	<key>GMSApiKey</key>
+	<string>YOUR_GOOGLE_MAPS_API_KEY_HERE</string>
+</dict>
+</plist>
