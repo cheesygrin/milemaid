@@ -338,7 +338,7 @@ class TrackingService {
     final pos = await _locationService.getCurrentPosition();
     final first = pos != null
         ? LatLng(pos.latitude, pos.longitude)
-        : const LatLng(25.7617, -80.1918); // Miami fallback
+        : const LatLng(37.7749, -122.4194); // Demo fallback center (synthetic coordinates for sample/manual trips)
 
     _currentTripStart = now;
     _currentRoute.clear();

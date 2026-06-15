@@ -54,7 +54,8 @@ class SampleDataService {
       );
     }
 
-    // Miami-area coordinates — short commutes and client runs.
+    // Fictional demo data only. All coordinates, purposes, and trips below are synthetic
+    // for UI testing and demonstration purposes. No real locations or user data.
     return [
       make(
         daysAgo: 0,
@@ -63,7 +64,7 @@ class SampleDataService {
         durationMin: 28,
         miles: 8.4,
         category: TripCategory.business,
-        purpose: 'Client site visit — Brickell',
+        purpose: 'Client site visit',
         startLat: 25.7907,
         startLng: -80.1300,
         endLat: 25.7617,
@@ -104,7 +105,7 @@ class SampleDataService {
         durationMin: 42,
         miles: 14.6,
         category: TripCategory.business,
-        purpose: 'Airport pickup — MIA',
+        purpose: 'Airport pickup',
         startLat: 25.7617,
         startLng: -80.1918,
         endLat: 25.7959,
@@ -130,7 +131,7 @@ class SampleDataService {
         durationMin: 35,
         miles: 11.8,
         category: TripCategory.business,
-        purpose: 'Supplier meeting — Doral',
+        purpose: 'Supplier meeting',
         startLat: 25.7617,
         startLng: -80.1918,
         endLat: 25.8195,
@@ -156,7 +157,7 @@ class SampleDataService {
         durationMin: 31,
         miles: 9.7,
         category: TripCategory.business,
-        purpose: 'Site survey — Coral Gables',
+        purpose: 'Site survey',
         startLat: 25.7617,
         startLng: -80.1918,
         endLat: 25.7215,

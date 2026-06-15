@@ -56,25 +56,36 @@ MileMaid is a **tool to help you record your mileage**. It is not tax advice.
 
 ## Getting Started (Users)
 
-1. Download MileMaid from the App Store / Google Play (coming soon — join the waitlist below).
+1. Download MileMaid from the App Store / Google Play (coming soon).
 2. Complete the short onboarding and grant "Always" location permission (required for automatic tracking when your phone is locked).
 3. Drive normally. Trips will appear automatically.
 4. Review, classify (Business/Personal/etc.), and export professional PDFs whenever you need them.
 
-**Early access / beta:** [Sign up link placeholder]
+This project is open source and available as a portfolio piece. See the "For Developers" section below for technical details.
 
 ## For Developers
 
-This project was originally built as a high-fidelity technical exercise following a detailed production-ready Flutter blueprint.
+This is a complete, production-grade Flutter application built as a high-fidelity technical exercise and now released as open source.
 
-Interested in the tech?
+### Tech Stack & Architecture
+- Flutter 3.29+ + Material 3
+- State: Riverpod + riverpod_annotation + Freezed + code generation
+- Local persistence: Hive (fully offline-first, zero backend)
+- Background location: `geolocator` + `flutter_foreground_task` (persistent Android service + iOS background modes)
+- Intelligent auto trip detection (speed + time + distance heuristics)
+- Mapping: google_maps_flutter with polylines, markers, and fit-bounds
+- Reports: `pdf` + `printing` package — multi-page IRS-style PDFs (cover, summary stats, detailed table, disclaimers)
+- Charts: fl_chart (line + pie)
+- Navigation: go_router
+- Monetization scaffolding: in_app_purchase (currently disabled for App Store compliance — see AppConfig)
 
-- Flutter 3.29+
-- Riverpod + Freezed + codegen
-- `geolocator` + `flutter_foreground_task` for reliable background tracking
-- `pdf` + `printing` for multi-page IRS-style reports
-- Google Maps with polyline rendering
-- Fully offline-first with Hive
+### What This Project Demonstrates
+- Real production background location tracking that survives app termination and phone restarts
+- Complex domain logic (trip start/end detection, route sampling, distance calculation)
+- Professional document generation suitable for legal/IRS use
+- Clean, maintainable architecture with immutable models and generated code
+- Careful attention to platform specifics (permissions, privacy labels, foreground services)
+- End-to-end feature completeness: live tracking → list → detail map → edit → export PDF/CSV
 
 ```bash
 flutter pub get
@@ -82,9 +93,11 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run
 ```
 
-**Note:** You will need your own Google Maps API key (enable Maps SDK for iOS and Android).
+**Note:** You will need your own Google Maps API key (enable Maps SDK for iOS and Android) and update the placeholders in `ios/Runner/Info.plist` and `android/app/src/main/AndroidManifest.xml`.
 
-See the original technical blueprint and architecture decisions in the commit history / docs.
+The Android package and iOS bundle identifier are set to `com.timrose.milemaid`. Forkers should update these for their own signing and distribution.
+
+See commit history for the original detailed blueprint and architecture decisions.
 
 ## Roadmap
 
@@ -97,9 +110,13 @@ See the original technical blueprint and architecture decisions in the commit hi
 
 ## Contributing
 
-For now this is primarily a solo project while we get the core experience solid. Feedback, bug reports, and ideas are welcome via GitHub Issues.
+Contributions, feedback, bug reports, and ideas are very welcome via GitHub Issues and Pull Requests.
 
-If you're a Flutter developer looking for interesting background location + document generation work, feel free to reach out.
+This project is also intended as a portfolio piece demonstrating strong Flutter engineering skills (background services, offline data, PDF generation, state management, and platform integration). If you're using it for hiring or learning, feel free to open issues with questions.
+
+## License
+
+MIT License — see [LICENSE](LICENSE) file.
 
 ## License
 
