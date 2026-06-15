@@ -32,3 +32,5 @@ If you are working on anything besides MileMaid, use a completely separate direc
 Do not work on multiple projects in the same terminal session or AI chat without explicitly changing directories and confirming the context.
 
 Last updated: 2026
+
+**Current expected location:** ~/Projects/portfolio/milemaid

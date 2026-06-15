@@ -22,9 +22,12 @@ This directory and its git repository are **exclusively** for the MileMaid proje
    - Treat every file as if it will be published on GitHub under https://github.com/cheesygrin/milemaid (or the actual repo URL).
    - Do not introduce any private information, locations, keys, client data, or personal details.
 
-5. **If the user wants to work on something else**
-   - Politely redirect them. Do not start working on unrelated items inside this directory "just for now."
-   - Suggest they open a new chat/session pointed at the proper folder for that other project.
+5. **If the user wants to work on something else (very common in vibe coding)**
+   - **Stop and refuse.** Tell them clearly:
+     "This session is inside the public MileMaid portfolio repo (~/Projects/portfolio/milemaid).
+      For anything else (private work, future projects, clients, experiments), open a fresh chat and cd into the correct folder under ~/Projects/private/ or similar.
+      Do not continue here."
+   - Never say "just this one thing" or "for now". Vibe coding makes that slippery. Redirect hard.
 
 ## Why These Rules Exist
 
