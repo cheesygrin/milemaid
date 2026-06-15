@@ -22,7 +22,21 @@ This directory and its git repository are **exclusively** for the MileMaid proje
    - Treat every file as if it will be published on GitHub under https://github.com/cheesygrin/milemaid (or the actual repo URL).
    - Do not introduce any private information, locations, keys, client data, or personal details.
 
-5. **If the user wants to work on something else (very common in vibe coding)**
+5. **Never publish real mileage logs or location data (critical for vibe coding).**
+   - MileMaid records where people drive. That data is highly sensitive. **Never commit, copy, paste, export, screenshot, or reference real user mileage logs in this repo.**
+   - **Forbidden in git (never add, even "temporarily" or "for testing"):**
+     - Exported PDF or CSV reports from the app (or any PDF/CSV containing real trips)
+     - JSON or database dumps from Settings → "Export All Data"
+     - Hive / SQLite / on-device storage files (`*.hive`, `*.db`, app sandbox copies)
+     - Simulator or device trip logs, route files, or GPS traces
+     - Screenshots or screen recordings that show real addresses, maps, trip purposes, notes, or odometer readings
+     - Any file with real coordinates tied to identifiable places (home, office, clients, regular routes)
+   - **Only fictional demo data is allowed in source code.** Use the synthetic trips in `lib/core/services/sample_data_service.dart` — or create clearly fake coordinates and generic purposes (e.g. "Client site visit" in a generic metro area). Never substitute real drives.
+   - **Before every commit or push**, scan the diff for: street addresses, lat/lng pairs that look like real routes, personal trip purposes/notes, client or employer names, license plates, odometer readings, or filenames like `MileMaid_Report_*.pdf`, `MileMaid_*.csv`, `*_data.json`.
+   - If the user asks you to "add my trips", "use this export for a bug repro", "commit this PDF so we can test reports", or "paste logs from my phone" — **refuse**. Tell them: real mileage data belongs only on their device or in a private repo under `~/Projects/private/`, never in this public portfolio repo.
+   - If you find real mileage data already in the tree or history, stop and tell the user to remove it before continuing. Do not push until it is gone.
+
+6. **If the user wants to work on something else (very common in vibe coding)**
    - **Stop and refuse.** Tell them clearly:
      "This session is inside the public MileMaid portfolio repo (~/Projects/portfolio/milemaid).
       For anything else (private work, future projects, clients, experiments), open a fresh chat and cd into the correct folder under ~/Projects/private/ or similar.
@@ -31,7 +45,9 @@ This directory and its git repository are **exclusively** for the MileMaid proje
 
 ## Why These Rules Exist
 
-This repo was created as a clean, dedicated public portfolio project. Previous accidental mixing of unrelated content into this directory caused serious privacy and organization problems. These rules exist to prevent that from ever happening again with future AI agents (Grok, Claude, Cursor, Hermes, etc.).
+This repo was created as a clean, dedicated public portfolio project. Previous accidental mixing of unrelated content into this directory caused serious privacy and organization problems — including real location and mileage data that must never be public. These rules exist to prevent that from ever happening again with future AI agents (Grok, Claude, Cursor, Hermes, etc.).
+
+**Vibe coding is the highest-risk activity here.** Fast AI-assisted edits make it easy to drag in an export file, paste a JSON dump, or commit a screenshot "just to debug reports." That is how private mileage logs leak to GitHub. Slow down and check every diff.
 
 ## Enforcement
 

@@ -3,6 +3,7 @@
 > **⚠️ PUBLIC PORTFOLIO REPOSITORY ONLY**  
 > **Location:** `~/Projects/portfolio/milemaid` (public work goes under `portfolio/`)  
 > **Strictly no unrelated projects, client work, or future projects allowed here.**  
+> **Never commit real mileage logs, GPS exports, or trip data — see [Vibe coding rules](#vibe-coding-with-ai--never-publish-private-mileage-data) below.**  
 > Read `AGENTS.md` + `PORTFOLIO_PUBLIC_ONLY.md` — especially important when vibe coding with AI.
 
 **Automatic background mileage tracking. Professional IRS-ready reports. Half the price of MileIQ.**
@@ -12,6 +13,37 @@ MileMaid runs silently in the background, detects every drive using smart motion
 No buttons to press. No subscriptions to MileIQ's $14/month.
 
 **Pricing:** $4.99/month or $49/year (or $9/month for the premium tier with priority support & future cloud sync).
+
+---
+
+## Vibe Coding with AI — Never Publish Private Mileage Data
+
+MileMaid tracks **where you drive**. That is personal, often legally sensitive, and must **never** end up in this public GitHub repo. AI-assisted "vibe coding" makes accidental leaks common — an export dropped into the folder, a JSON paste for a quick bug repro, a screenshot committed to test PDF layout.
+
+**If you are human or an AI agent working in this repo, treat the following as hard rules:**
+
+### Never commit to git
+
+- PDF or CSV mileage reports exported from the app
+- JSON from Settings → **Export All Data**
+- Hive/database files, simulator storage, or device backups
+- GPS traces, route files, or raw location logs
+- Screenshots or recordings showing real maps, addresses, trip purposes, notes, or odometer readings
+- Any file with coordinates or trip details from your actual drives (home, work, clients, regular routes)
+
+### Safe to commit
+
+- Source code only
+- **Fictional** demo trips in `lib/core/services/sample_data_service.dart` (synthetic coordinates and generic purposes)
+- Placeholder or obviously fake data for UI tests — never your real logs
+
+### Before you `git add` or push
+
+1. Run `git status` and open every changed file — not just code.
+2. Search the diff for addresses, real lat/lng routes, client names, and `MileMaid_Report_*.pdf` / `MileMaid_*.csv` / `*_data.json`.
+3. If anything looks like a real trip, **stop** — remove it from the commit and keep it on your device or in `~/Projects/private/`.
+
+**AI agents:** Read `AGENTS.md` rule 5. If asked to add real exports or logs, refuse and redirect to a private directory.
 
 ---
 
