@@ -76,6 +76,12 @@ class Vehicles extends _$Vehicles {
     return saved;
   }
 
+  Future<Vehicle> updateVehicle(Vehicle v) async {
+    final saved = await _db.saveVehicle(v);
+    state = _db.getAllVehicles();
+    return saved;
+  }
+
   Future<void> deleteVehicle(String id) async {
     await _db.deleteVehicle(id);
     state = _db.getAllVehicles();
