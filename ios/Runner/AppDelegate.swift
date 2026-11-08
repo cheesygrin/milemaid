@@ -4,7 +4,7 @@ import GoogleMaps
 import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, CLLocationManagerDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, CLLocationManagerDelegate {
   /// Significant-change monitoring is what makes iOS relaunch MileMaid in the
   /// background after it was terminated (by the system or by swiping it away),
   /// as soon as the phone moves a few hundred meters. main() then resumes the
@@ -24,12 +24,16 @@ import UIKit
       GMSServices.provideAPIKey(apiKey)
     }
 
-    GeneratedPluginRegistrant.register(with: self)
-
     relaunchLocationManager.delegate = self
     startRelaunchMonitoringIfAuthorized()
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  // UIScene lifecycle (required for apps built with the iOS 27 SDK): plugins
+  // register on the implicit engine that FlutterSceneDelegate creates.
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
   }
 
   private func startRelaunchMonitoringIfAuthorized() {
