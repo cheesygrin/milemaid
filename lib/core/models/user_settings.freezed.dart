@@ -18,7 +18,9 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$UserSettings {
   String get name => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
-  double get mileageRate => throw _privateConstructorUsedError; // IRS default
+
+  /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
+  double get mileageRate => throw _privateConstructorUsedError;
   String get trackingSensitivity =>
       throw _privateConstructorUsedError; // High / Balanced / Battery Saver
   bool get notificationsEnabled => throw _privateConstructorUsedError;
@@ -254,10 +256,11 @@ class _$UserSettingsImpl extends _UserSettings {
   @override
   @JsonKey()
   final String email;
+
+  /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
   @override
   @JsonKey()
   final double mileageRate;
-// IRS default
   @override
   @JsonKey()
   final String trackingSensitivity;
@@ -365,8 +368,10 @@ abstract class _UserSettings extends UserSettings {
   @override
   String get email;
   @override
+
+  /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
   double get mileageRate;
-  @override // IRS default
+  @override
   String get trackingSensitivity;
   @override // High / Balanced / Battery Saver
   bool get notificationsEnabled;
