@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
+import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/features/dashboard/presentation/dashboard_screen.dart';
@@ -170,12 +171,23 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     _router.push('/trips/$id');
   }
 
+  /// True while a [TripEnricher.backfill] pass is running, so resume events
+  /// never stack a second one on top.
+  bool _backfillRunning = false;
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _resumeTrackingIfNeeded();
       // Close a drive that ended while the app wasn't getting GPS fixes.
       TrackingService().checkForEndedTrip();
+      // Fill in missing addresses in the background (one pass at a time).
+      if (!_backfillRunning) {
+        _backfillRunning = true;
+        TripEnricher.instance
+            .backfill()
+            .whenComplete(() => _backfillRunning = false);
+      }
       ref.read(dashboardProvider.notifier).refresh();
       ref.read(tripsProvider.notifier).refresh();
     }

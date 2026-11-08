@@ -11,6 +11,8 @@ import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/core/utils/distance_calculator.dart';
 import 'package:milemaid/core/utils/trip_detector.dart';
@@ -318,7 +320,7 @@ class TrackingService {
     final points =
         result.route.map((p) => LatLngPoint.fromLatLng(p)).toList();
 
-    final trip = Trip(
+    var trip = Trip(
       id: const Uuid().v4(),
       startTime: start,
       endTime: end,
@@ -330,6 +332,12 @@ class TrackingService {
       category: TripCategory.other,
       isConfirmed: false,
     );
+
+    // Fill in addresses / place ids before saving. A slow geocoder must never
+    // lose a drive or delay it more than 6 s: fall back to the bare trip.
+    trip = await TripEnricher.instance
+        .enrich(trip)
+        .timeout(const Duration(seconds: 6), onTimeout: () => trip);
 
     await _db.saveTrip(trip);
 
@@ -376,8 +384,20 @@ class TrackingService {
 
   Future<void> _showTripEndedNotification(Trip trip) async {
     final title = AppStrings.tripEndedNotificationTitle;
-    final body = AppStrings.tripEndedNotificationBody
-        .replaceFirst('%s', trip.distanceMiles.toStringAsFixed(1));
+    String body;
+    final endLabel = placeLabel(
+      trip.endLocationId,
+      trip.endAddress,
+      {
+        for (final place in _db.getAllLocations()) place.id: place,
+      },
+    );
+    if (trip.endLocationId != null) {
+      body = '${trip.distanceMiles.toStringAsFixed(1)} mi drive to $endLabel. Tap to classify.';
+    } else {
+      body = AppStrings.tripEndedNotificationBody
+          .replaceFirst('%s', trip.distanceMiles.toStringAsFixed(1));
+    }
 
     const androidDetails = AndroidNotificationDetails(
       'milemaid_trips',
