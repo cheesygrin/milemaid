@@ -87,10 +87,18 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
-  Future<void> _markBusiness() async {
-    final updated = _trip.copyWith(category: TripCategory.business, isConfirmed: true);
+  /// Toggle a trip between Business and Personal from the detail screen.
+  Future<void> _toggleCategory() async {
+    final isBusiness = _trip.category == TripCategory.business;
+    final updated = _trip.copyWith(
+      category: isBusiness ? TripCategory.personal : TripCategory.business,
+      isConfirmed: true,
+    );
     await ref.read(tripsProvider.notifier).addOrUpdateTrip(updated);
-    setState(() => _trip = updated);
+    setState(() {
+      _trip = updated;
+      _category = updated.category;
+    });
   }
 
   Future<void> _duplicateReturn() async {
@@ -224,8 +232,10 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
               children: [
                 Expanded(
                   child: FilledButton.tonal(
-                    onPressed: _markBusiness,
-                    child: const Text('Mark as Business'),
+                    onPressed: _toggleCategory,
+                    child: Text(_trip.category == TripCategory.business
+                        ? 'Mark as Personal'
+                        : 'Mark as Business'),
                   ),
                 ),
                 const SizedBox(width: 12),
