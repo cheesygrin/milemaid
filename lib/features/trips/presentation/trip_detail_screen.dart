@@ -3,11 +3,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/config/app_config.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/shared/widgets/category_chip.dart';
 import 'package:milemaid/shared/widgets/custom_map.dart';
+import 'package:uuid/uuid.dart';
 
 class TripDetailScreen extends ConsumerStatefulWidget {
   final String tripId;
@@ -32,6 +37,20 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   void initState() {
     super.initState();
     _loadTrip();
+  }
+
+  /// Current named places keyed by id, for the From/To labels.
+  Map<String, NamedLocation> get _placesById =>
+      locationsById(DatabaseService().getAllLocations());
+
+  /// Re-reads the trip from the provider without touching edit-in-progress
+  /// state (unlike [_loadTrip], which resets the controllers).
+  void _refreshTripObject() {
+    final trips = ref.read(tripsProvider);
+    final idx = trips.indexWhere((t) => t.id == widget.tripId);
+    if (idx != -1) {
+      setState(() => _trip = trips[idx]);
+    }
   }
 
   void _loadTrip() {
@@ -101,6 +120,117 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
+  Widget _endpointRow(
+    String title,
+    String? locationId,
+    String? address,
+    LatLngPoint? point,
+  ) {
+    final label = placeLabel(locationId, address, _placesById);
+    return ListTile(
+      dense: true,
+      title: Text(title, style: Theme.of(context).textTheme.titleSmall),
+      subtitle: Text(label),
+      trailing: point == null
+          ? null
+          : TextButton(
+              onPressed: () => _nameThisPlace(point, address),
+              child: const Text('Name this place'),
+            ),
+    );
+  }
+
+  /// "Name this place": asks for a name, a geofence radius (50-500 m) and an
+  /// optional default category, then creates a [NamedLocation] at [point],
+  /// re-matches every trip against the new place and refreshes.
+  Future<void> _nameThisPlace(LatLngPoint point, String? address) async {
+    final nameCtrl = TextEditingController();
+    var radius = 150.0;
+    TripCategory? defaultCategory;
+    var nameError = false;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Name this place'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  errorText: nameError ? 'Name is required' : null,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('Radius: ${radius.round()} m',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Slider(
+                value: radius,
+                min: 50,
+                max: 500,
+                divisions: 45,
+                label: '${radius.round()} m',
+                onChanged: (v) => setDialogState(() => radius = v),
+              ),
+              DropdownButtonFormField<TripCategory>(
+                initialValue: defaultCategory,
+                decoration: const InputDecoration(labelText: 'Default category (optional)'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ...TripCategory.values.map(
+                    (c) => DropdownMenuItem(value: c, child: Text(c.displayName)),
+                  ),
+                ],
+                onChanged: (v) => setDialogState(() => defaultCategory = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) {
+                  setDialogState(() => nameError = true);
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true) return;
+
+    final place = NamedLocation(
+      id: const Uuid().v4(),
+      name: nameCtrl.text.trim(),
+      latitude: point.latitude,
+      longitude: point.longitude,
+      radiusMeters: radius,
+      // Store the trip's address on the place so later trips here inherit it.
+      address: address,
+      defaultCategory: defaultCategory,
+      createdAt: DateTime.now(),
+    );
+    await DatabaseService().saveLocation(place);
+    final changed = await TripEnricher.instance.rematchAll();
+    await ref.read(tripsProvider.notifier).refresh();
+    _refreshTripObject();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved "${place.name}". $changed trip(s) re-matched.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_maybeTrip == null) {
@@ -156,6 +286,29 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
               _bigStat(_trip.formattedDuration, 'Duration'),
               _bigStat(DateHelpers.formatTime(_trip.startTime), 'Started'),
             ],
+          ),
+          const SizedBox(height: 16),
+
+          // From / To endpoints, with a "Name this place" action each when
+          // the route has points.
+          Card(
+            child: Column(
+              children: [
+                _endpointRow(
+                  'From',
+                  _trip.startLocationId,
+                  _trip.startAddress,
+                  _trip.routePoints.isNotEmpty ? _trip.routePoints.first : null,
+                ),
+                const Divider(height: 1),
+                _endpointRow(
+                  'To',
+                  _trip.endLocationId,
+                  _trip.endAddress,
+                  _trip.routePoints.isNotEmpty ? _trip.routePoints.last : null,
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 16),
 
