@@ -58,3 +58,9 @@ app.*.map.json
 #   git update-index --skip-worktree android/app/src/main/AndroidManifest.xml
 # To undo (e.g. to commit a non-key change to these files):
 #   git update-index --no-skip-worktree <file>
+
+# Crew work-order reports (internal, never published)
+.crew/
+
+# Local-only build settings (Google OAuth client IDs etc.). See ios/Flutter/Secrets.example.xcconfig
+ios/Flutter/Secrets.xcconfig
