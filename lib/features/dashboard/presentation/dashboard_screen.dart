@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:milemaid/core/constants/irs_rates.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/constants/design_tokens.dart';
@@ -115,7 +116,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           ),
                           const SizedBox(height: AppSpacing.xxs),
                           Text(
-                            '${AppStrings.deductionEstimate}: \$${_format(dash.deductionEstimate)} at ${dash.currentRate.toStringAsFixed(2)}/mi',
+                            '${AppStrings.deductionEstimate}: \$${_format(dash.deductionEstimate)} at ${IrsRates.format(dash.currentRate)}/mi',
                             style: AppTypography.labelMedium.copyWith(color: Colors.white70),
                           ),
                         ],

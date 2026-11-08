@@ -18,7 +18,7 @@ class ReportService {
       trips: trips,
       startDate: start,
       endDate: end,
-      rate: settings.effectiveRate,
+      rateFor: settings.rateFor,
     );
   }
 

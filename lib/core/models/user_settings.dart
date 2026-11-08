@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:milemaid/core/constants/irs_rates.dart';
 
 part 'user_settings.freezed.dart';
 
@@ -10,7 +11,8 @@ class UserSettings with _$UserSettings {
   const factory UserSettings({
     @Default('') String name,
     @Default('') String email,
-    @Default(0.72) double mileageRate, // IRS default
+    /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
+    @Default(0.0) double mileageRate,
     @Default('Balanced') String trackingSensitivity, // High / Balanced / Battery Saver
     @Default(true) bool notificationsEnabled,
     @Default(true) bool tripEndConfirmation,
@@ -32,7 +34,7 @@ class UserSettings with _$UserSettings {
   static UserSettings fromJson(Map<String, dynamic> json) => UserSettings(
         name: json['name'] as String? ?? '',
         email: json['email'] as String? ?? '',
-        mileageRate: (json['mileageRate'] as num?)?.toDouble() ?? 0.72,
+        mileageRate: _migrateRate((json['mileageRate'] as num?)?.toDouble()),
         trackingSensitivity: json['trackingSensitivity'] as String? ?? 'Balanced',
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
         tripEndConfirmation: json['tripEndConfirmation'] as bool? ?? true,
@@ -57,6 +59,20 @@ class UserSettings with _$UserSettings {
         'themeMode': themeMode,
       };
 
-  /// Returns the effective rate (global for v1)
-  double get effectiveRate => mileageRate;
+  /// Earlier builds stored a hard-coded 0.72 as the default, which was never an
+  /// actual IRS rate. Treat it as "follow the IRS rate".
+  static double _migrateRate(double? stored) {
+    if (stored == null || stored == 0.72) return 0.0;
+    return stored;
+  }
+
+  /// True when the rate follows the IRS standard rate by trip date.
+  bool get usesIrsRate => mileageRate <= 0;
+
+  /// The rate that applies to a trip on [date].
+  double rateFor(DateTime date) =>
+      usesIrsRate ? IrsRates.rateFor(date) : mileageRate;
+
+  /// The rate that applies today.
+  double get effectiveRate => rateFor(DateTime.now());
 }

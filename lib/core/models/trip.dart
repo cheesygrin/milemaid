@@ -133,4 +133,7 @@ class Trip with _$Trip {
 
   /// e.g. "12.4 mi"
   String get formattedDistance => '${distanceMiles.toStringAsFixed(1)} mi';
+
+  /// Business miles count only once the user has reviewed the trip.
+  bool get countsAsBusiness => category == TripCategory.business && isConfirmed;
 }

@@ -51,7 +51,7 @@ class ExportService {
       trips: trips,
       startDate: start,
       endDate: end,
-      rate: settings.effectiveRate,
+      rateFor: settings.rateFor,
     );
   }
 
@@ -129,7 +129,7 @@ class ExportService {
                 pw.Row(
                   mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Text('Deduction (${report.rateUsed.toStringAsFixed(2)}/mi)', style: const pw.TextStyle(fontSize: 11)),
+                    pw.Text('Deduction (avg ${IrsRates.format(report.rateUsed)}/mi)', style: const pw.TextStyle(fontSize: 11)),
                     pw.Text('\$${report.deductionAmount.toStringAsFixed(2)}',
                         style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColor.fromInt(0xFF00C853))),
                   ],
@@ -144,7 +144,7 @@ class ExportService {
             children: [
               _kpiBox('Total Miles', report.totalMiles.toStringAsFixed(1)),
               _kpiBox('Trips', '${report.totalTrips}'),
-              _kpiBox('Rate Used', '\$${report.rateUsed.toStringAsFixed(2)}'),
+              _kpiBox('Avg. Rate', IrsRates.format(report.rateUsed)),
             ],
           ),
           pw.SizedBox(height: 24),

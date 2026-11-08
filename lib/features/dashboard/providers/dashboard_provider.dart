@@ -24,15 +24,17 @@ class Dashboard extends _$Dashboard {
     final monthEnd = DateTime(now.year, now.month + 1, 0);
 
     double businessMonth = 0;
+    double deductionMonth = 0;
     double total = 0;
     double personal = 0;
     int tripCount = all.length;
 
     for (final t in all) {
       total += t.distanceMiles;
-      if (t.category == TripCategory.business) {
+      if (t.countsAsBusiness) {
         if (t.startTime.isAfter(monthStart) && t.startTime.isBefore(monthEnd.add(const Duration(days: 1)))) {
           businessMonth += t.distanceMiles;
+          deductionMonth += t.distanceMiles * settings.rateFor(t.startTime);
         }
       } else if (t.category == TripCategory.personal) {
         personal += t.distanceMiles;
@@ -50,7 +52,7 @@ class Dashboard extends _$Dashboard {
       recentTrips: last5,
       last7DaysMiles: last7,
       currentRate: settings.effectiveRate,
-      deductionEstimate: businessMonth * settings.effectiveRate,
+      deductionEstimate: deductionMonth,
     );
   }
 

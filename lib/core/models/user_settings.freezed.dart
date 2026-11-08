@@ -237,7 +237,7 @@ class _$UserSettingsImpl extends _UserSettings {
   const _$UserSettingsImpl(
       {this.name = '',
       this.email = '',
-      this.mileageRate = 0.72,
+      this.mileageRate = 0.0,
       this.trackingSensitivity = 'Balanced',
       this.notificationsEnabled = true,
       this.tripEndConfirmation = true,

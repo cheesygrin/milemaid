@@ -69,7 +69,7 @@ MileMaid tracks **where you drive**. That data is personal and often legally sen
 - Professional PDF export (cover + summary + detailed table)
 - CSV export
 - Multi-vehicle support
-- Custom mileage rate (defaults to 2026 IRS rate of $0.72/mi)
+- IRS standard mileage rate applied by trip date (72.5¢ Jan–Jun 2026, 76¢ from Jul 1, 2026), or a custom rate
 - One-tap "Mark as Business" and "Duplicate as Return Trip"
 
 ## Pricing & Plans

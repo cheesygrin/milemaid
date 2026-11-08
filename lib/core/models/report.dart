@@ -26,9 +26,10 @@ class Report with _$Report {
     required List<Trip> trips,
     required DateTime startDate,
     required DateTime endDate,
-    required double rate,
+    required double Function(DateTime date) rateFor,
   }) {
     double total = 0;
+    double deduction = 0;
     double biz = 0, pers = 0, comm = 0, oth = 0;
     int count = trips.length;
 
@@ -36,7 +37,13 @@ class Report with _$Report {
       total += t.distanceMiles;
       switch (t.category) {
         case TripCategory.business:
-          biz += t.distanceMiles;
+          if (t.countsAsBusiness) {
+            biz += t.distanceMiles;
+            deduction += t.distanceMiles * rateFor(t.startTime);
+          } else {
+            // Not reviewed yet: never counted as business.
+            oth += t.distanceMiles;
+          }
           break;
         case TripCategory.personal:
           pers += t.distanceMiles;
@@ -60,8 +67,9 @@ class Report with _$Report {
       commuteMiles: comm,
       otherMiles: oth,
       totalTrips: count,
-      deductionAmount: biz * rate,
-      rateUsed: rate,
+      deductionAmount: deduction,
+      // Average across the trips (the IRS rate can change within a period).
+      rateUsed: biz > 0 ? deduction / biz : rateFor(endDate),
     );
   }
 }

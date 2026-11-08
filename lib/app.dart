@@ -143,20 +143,39 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       ref.read(dashboardProvider.notifier).refresh();
     };
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _resumeTrackingIfNeeded());
+    TrackingService().pendingReviewTripId.addListener(_openPendingTrip);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _resumeTrackingIfNeeded();
+      // The app may have been launched by tapping a drive notification.
+      _openPendingTrip();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    TrackingService().pendingReviewTripId.removeListener(_openPendingTrip);
     DatabaseService().onTripsChanged = null;
     super.dispose();
+  }
+
+  /// Opens the trip from a tapped drive notification so it can be classified.
+  void _openPendingTrip() {
+    final pending = TrackingService().pendingReviewTripId;
+    final id = pending.value;
+    if (id == null) return;
+    pending.value = null;
+    if (!DatabaseService().getSettings().hasCompletedOnboarding) return;
+    _router.push('/trips/$id');
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _resumeTrackingIfNeeded();
+      // Close a drive that ended while the app wasn't getting GPS fixes.
+      TrackingService().checkForEndedTrip();
       ref.read(dashboardProvider.notifier).refresh();
       ref.read(tripsProvider.notifier).refresh();
     }

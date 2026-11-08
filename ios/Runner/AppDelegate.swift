@@ -1,9 +1,17 @@
+import CoreLocation
 import Flutter
-import UIKit
 import GoogleMaps
+import UIKit
 
 @main
-@objc class AppDelegate: FlutterAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, CLLocationManagerDelegate {
+  /// Significant-change monitoring is what makes iOS relaunch MileMaid in the
+  /// background after it was terminated (by the system or by swiping it away),
+  /// as soon as the phone moves a few hundred meters. main() then resumes the
+  /// regular GPS tracking. The geolocator plugin's continuous updates alone stop
+  /// for good once the app is terminated.
+  private let relaunchLocationManager = CLLocationManager()
+
   override func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
@@ -18,9 +26,41 @@ import GoogleMaps
 
     GeneratedPluginRegistrant.register(with: self)
 
-    // flutter_foreground_task and geolocator handle most iOS background via Info.plist
-    // CLLocationManager is configured by the geolocator + flutter_foreground_task plugins.
+    relaunchLocationManager.delegate = self
+    startRelaunchMonitoringIfAuthorized()
 
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func startRelaunchMonitoringIfAuthorized() {
+    guard CLLocationManager.significantLocationChangeMonitoringAvailable() else { return }
+    let status: CLAuthorizationStatus
+    if #available(iOS 14.0, *) {
+      status = relaunchLocationManager.authorizationStatus
+    } else {
+      status = CLLocationManager.authorizationStatus()
+    }
+    // Background relaunch only happens with "Always" permission.
+    if status == .authorizedAlways {
+      relaunchLocationManager.startMonitoringSignificantLocationChanges()
+    }
+  }
+
+  // Permission is usually granted during onboarding, after launch.
+  @available(iOS 14.0, *)
+  func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+    startRelaunchMonitoringIfAuthorized()
+  }
+
+  func locationManager(_ manager: CLLocationManager, didChangeAuthorization status: CLAuthorizationStatus) {
+    startRelaunchMonitoringIfAuthorized()
+  }
+
+  func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+    // Nothing to do: the relaunch itself is the point. Trip detection runs in Dart.
+  }
+
+  func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    // Ignored: monitoring retries on its own.
   }
 }

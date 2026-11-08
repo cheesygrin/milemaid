@@ -58,7 +58,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           const _SectionHeader('Mileage Rate'),
           ListTile(
             title: const Text('Rate per mile'),
-            subtitle: Text('\$${settings.mileageRate.toStringAsFixed(2)}  • ${AppStrings.irsRateNote}'),
+            subtitle: Text(settings.usesIrsRate
+                ? '${IrsRates.formattedRate} today  • ${AppStrings.irsRateNote}'
+                : '${IrsRates.format(settings.mileageRate)}  • Custom rate'),
             trailing: const Icon(Icons.edit),
             onTap: () => _editRate(context, ref, settings.mileageRate),
           ),
@@ -217,7 +219,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _editRate(BuildContext ctx, WidgetRef ref, double current) {
-    final ctrl = TextEditingController(text: current.toStringAsFixed(2));
+    final ctrl = TextEditingController(
+        text: current > 0 ? current.toStringAsFixed(3) : '');
     showDialog(
       context: ctx,
       builder: (c) => AlertDialog(
@@ -225,13 +228,19 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         content: TextField(
           controller: ctrl,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: 'Rate per mile', prefixText: '\$'),
+          decoration: InputDecoration(
+            labelText: 'Rate per mile',
+            prefixText: '\$',
+            hintText: IrsRates.formattedRate.substring(1),
+            helperText: 'Leave empty to use the IRS rate for each trip date',
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(c), child: const Text('Cancel')),
           FilledButton(onPressed: () {
-            final v = double.tryParse(ctrl.text) ?? IrsRates.currentRate;
-            ref.read(settingsProvider.notifier).setRate(v);
+            // Empty or invalid: follow the IRS rate by trip date (stored as 0).
+            final v = double.tryParse(ctrl.text.trim()) ?? 0.0;
+            ref.read(settingsProvider.notifier).setRate(v > 0 ? v : 0.0);
             Navigator.pop(c);
           }, child: const Text('Save')),
         ],

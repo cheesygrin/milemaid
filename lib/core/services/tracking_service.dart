@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:math' as math;
-
 import 'dart:isolate';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
@@ -14,8 +15,6 @@ import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/core/utils/distance_calculator.dart';
 import 'package:milemaid/core/utils/trip_detector.dart';
 import 'package:uuid/uuid.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 /// The heart of MileMaid: automatic background trip detection & persistence.
 class TrackingService {
@@ -23,21 +22,40 @@ class TrackingService {
   factory TrackingService() => _instance;
   TrackingService._internal();
 
+  /// Notification category and action ids for the "Drive detected" prompt.
+  static const String tripCategoryId = 'trip_category';
+  static const String actionBusiness = 'business';
+  static const String actionPersonal = 'personal';
+  static const String actionEdit = 'edit';
+  static const String _payloadPrefix = 'trip:';
+
+  /// How often to check whether a drive ended while the phone sat still.
+  static const Duration _endCheckInterval = Duration(seconds: 30);
+
   final DatabaseService _db = DatabaseService();
   final LocationService _locationService = LocationService();
   final TripDetector _detector = TripDetector();
 
   StreamSubscription<Position>? _positionSubscription;
+  Timer? _endCheckTimer;
   bool _isTracking = false;
+  bool _starting = false;
 
-  // In-memory buffer for the trip currently being recorded
-  final List<LatLngPoint> _currentRoute = [];
-  DateTime? _currentTripStart;
-  double _currentDistance = 0.0;
+  // A trip the user started by hand ("Add Manual Trip" → live). Tracked
+  // separately from automatic detection.
+  DateTime? _manualStart;
+  final List<LatLngPoint> _manualRoute = [];
+  double _manualDistance = 0.0;
+
   LatLng? _lastPoint;
+  double _lastSpeedMph = 0;
 
   // For live UI updates (Riverpod will listen)
   final ValueNotifier<ActiveTrip?> activeTripNotifier = ValueNotifier(null);
+
+  /// Set when the user taps a drive notification (or its Edit button): the app
+  /// should open that trip so the user can classify it.
+  final ValueNotifier<String?> pendingReviewTripId = ValueNotifier(null);
 
   FlutterLocalNotificationsPlugin? _notifications;
 
@@ -47,22 +65,40 @@ class TrackingService {
   Future<void> initialize() async {
     await _initNotifications();
     await _initForegroundTask();
-    // WorkManager disabled for compatibility; foreground service + main isolate stream is primary mechanism.
   }
 
   Future<void> _initNotifications() async {
     _notifications = FlutterLocalNotificationsPlugin();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit = DarwinInitializationSettings(
+    // iOS only shows action buttons for categories registered up front.
+    // Foreground actions open the app, so the choice is saved by this isolate
+    // (Hive is not safe to open from a second, background isolate).
+    const foreground = <DarwinNotificationActionOption>{
+      DarwinNotificationActionOption.foreground,
+    };
+    final iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
+      notificationCategories: <DarwinNotificationCategory>[
+        DarwinNotificationCategory(
+          tripCategoryId,
+          actions: <DarwinNotificationAction>[
+            DarwinNotificationAction.plain(actionBusiness, 'Business',
+                options: foreground),
+            DarwinNotificationAction.plain(actionPersonal, 'Personal',
+                options: foreground),
+            DarwinNotificationAction.plain(actionEdit, 'Edit',
+                options: foreground),
+          ],
+        ),
+      ],
     );
 
     await _notifications!.initialize(
-      const InitializationSettings(android: androidInit, iOS: iosInit),
-      onDidReceiveNotificationResponse: _onNotificationAction,
+      InitializationSettings(android: androidInit, iOS: iosInit),
+      onDidReceiveNotificationResponse: _onNotificationResponse,
     );
 
     // Create the trip ended channel (Android)
@@ -76,40 +112,58 @@ class TrackingService {
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
-  }
 
-  void _onNotificationAction(NotificationResponse response) {
-    final payload = response.payload;
-    if (payload == null) return;
-
-    if (payload.startsWith('classify:')) {
-      final parts = payload.split(':');
-      if (parts.length == 3) {
-        final tripId = parts[1];
-        final categoryStr = parts[2];
-        _quickClassifyTrip(tripId, categoryStr);
-      }
+    // The app was launched by tapping a drive notification (or one of its buttons).
+    final launch = await _notifications!.getNotificationAppLaunchDetails();
+    final response = launch?.notificationResponse;
+    if ((launch?.didNotificationLaunchApp ?? false) && response != null) {
+      await _handleNotificationResponse(response);
     }
   }
 
-  Future<void> _quickClassifyTrip(String tripId, String categoryStr) async {
+  void _onNotificationResponse(NotificationResponse response) {
+    unawaited(_handleNotificationResponse(response));
+  }
+
+  Future<void> _handleNotificationResponse(NotificationResponse response) async {
+    final tripId = _tripIdFromPayload(response.payload);
+    if (tripId == null) return;
+
+    switch (response.actionId) {
+      case actionBusiness:
+        await _classifyTrip(tripId, TripCategory.business);
+        break;
+      case actionPersonal:
+        await _classifyTrip(tripId, TripCategory.personal);
+        break;
+      default:
+        // The notification itself, or "Edit": open the trip without
+        // classifying it. It stays in the review queue until the user decides.
+        pendingReviewTripId.value = tripId;
+    }
+  }
+
+  static String? _tripIdFromPayload(String? payload) {
+    if (payload == null) return null;
+    if (payload.startsWith(_payloadPrefix)) {
+      final id = payload.substring(_payloadPrefix.length);
+      return id.isEmpty ? null : id;
+    }
+    // Notifications posted by older builds carried "classify:<id>:business".
+    // That category was a hard-coded default, never the user's choice: ignore it.
+    if (payload.startsWith('classify:')) {
+      final parts = payload.split(':');
+      return parts.length >= 2 && parts[1].isNotEmpty ? parts[1] : null;
+    }
+    return null;
+  }
+
+  Future<void> _classifyTrip(String tripId, TripCategory category) async {
     final trips = _db.getAllTrips();
     final idx = trips.indexWhere((t) => t.id == tripId);
     if (idx == -1) return;
 
-    TripCategory cat;
-    switch (categoryStr) {
-      case 'business':
-        cat = TripCategory.business;
-        break;
-      case 'personal':
-        cat = TripCategory.personal;
-        break;
-      default:
-        cat = TripCategory.other;
-    }
-
-    final updated = trips[idx].copyWith(category: cat, isConfirmed: true);
+    final updated = trips[idx].copyWith(category: category, isConfirmed: true);
     await _db.updateTrip(updated);
   }
 
@@ -141,129 +195,171 @@ class TrackingService {
     );
   }
 
-  /// Start passive background tracking.
-  /// This is called automatically after onboarding + permissions.
+  /// Start passive background tracking, asking for location permission if needed.
+  /// This is called after onboarding + permissions.
   Future<bool> startTracking() async {
-    if (_isTracking) return true;
+    if (_isTracking || _starting) return _isTracking;
+    _starting = true;
+    try {
+      final hasPermission = await _locationService.requestAlwaysPermission();
+      if (!hasPermission) {
+        debugPrint('TrackingService: Always permission denied');
+        return false;
+      }
+      await _startEngine();
+      return true;
+    } finally {
+      _starting = false;
+    }
+  }
 
-    final hasPermission = await _locationService.requestAlwaysPermission();
-    if (!hasPermission) {
-      debugPrint('TrackingService: Always permission denied');
+  /// Start tracking without showing any permission prompt. Used at launch,
+  /// including when iOS relaunches the app in the background after a
+  /// significant location change (no UI exists then, so nothing may prompt).
+  Future<bool> resumeIfAuthorized() async {
+    if (_isTracking || _starting) return _isTracking;
+    if (!_db.getSettings().hasCompletedOnboarding) return false;
+
+    final permission = await Geolocator.checkPermission();
+    if (permission != LocationPermission.always &&
+        permission != LocationPermission.whileInUse) {
       return false;
     }
 
-    // Start the Android foreground service (shows persistent notification)
-    await FlutterForegroundTask.startService(
-      notificationTitle: 'MileMaid is tracking your drives',
-      notificationText: 'Background location active. Your miles are safe.',
-      callback: _startTrackingCallback,
-    );
+    _starting = true;
+    try {
+      await _startEngine();
+      return true;
+    } finally {
+      _starting = false;
+    }
+  }
 
-    // Start listening to position stream in the main isolate (for live UI + detection)
+  Future<void> _startEngine() async {
+    // Start the Android foreground service (shows persistent notification).
+    // A failure here must not stop location tracking itself.
+    try {
+      await FlutterForegroundTask.startService(
+        notificationTitle: 'MileMaid is tracking your drives',
+        notificationText: 'Background location active. Your miles are safe.',
+        callback: _startTrackingCallback,
+      );
+    } catch (e) {
+      debugPrint('TrackingService: foreground service not started: $e');
+    }
+
+    // Position stream in the main isolate (live UI + detection).
     await _startPositionStream();
 
-    // (WorkManager disabled in this build for compatibility)
+    // Drives must end even when no new GPS fix arrives (phone parked).
+    _endCheckTimer?.cancel();
+    _endCheckTimer =
+        Timer.periodic(_endCheckInterval, (_) => checkForEndedTrip());
 
     _isTracking = true;
     debugPrint('TrackingService: STARTED');
-    return true;
   }
 
-  /// The actual position listening + detection logic.
   Future<void> _startPositionStream() async {
     await _positionSubscription?.cancel();
-
     _positionSubscription = _locationService.positionStream.listen(
-      (Position position) {
-        final speedMph = LocationService.speedMpsToMph(position.speed);
-        final now = DateTime.now();
-        final latLng = LatLng(position.latitude, position.longitude);
-
-        if (_currentTripStart != null) {
-          _currentRoute.add(LatLngPoint.fromLatLng(latLng));
-        }
-
-        // Update live distance if we have an active trip
-        if (_currentTripStart != null && _lastPoint != null) {
-          final delta = DistanceCalculator.distanceBetween(_lastPoint!, latLng);
-          _currentDistance += delta;
-        }
-        _lastPoint = latLng;
-
-        // Feed detector
-        final result = _detector.processLocation(
-          position: latLng,
-          speedMph: speedMph,
-          timestamp: now,
-        );
-
-        if (result.isStart) {
-          _beginNewTrip(now, latLng);
-        } else if (result.isEnd) {
-          _finalizeCurrentTrip(now, result.distanceMiles ?? _currentDistance);
-        }
-
-        // Update live UI state
-        if (_currentTripStart != null) {
-          activeTripNotifier.value = ActiveTrip(
-            startTime: _currentTripStart!,
-            currentDistanceMiles: _currentDistance,
-            currentSpeedMph: speedMph,
-            routePoints: List.from(_currentRoute),
-          );
-        } else {
-          activeTripNotifier.value = null;
-        }
-      },
+      _onPosition,
       onError: (e) => debugPrint('Position stream error: $e'),
     );
   }
 
-  void _beginNewTrip(DateTime start, LatLng firstPoint) {
-    _currentTripStart = start;
-    _currentRoute.clear();
-    _currentRoute.add(LatLngPoint.fromLatLng(firstPoint));
-    _currentDistance = 0.0;
-    _lastPoint = firstPoint;
+  void _onPosition(Position position) {
+    final now = DateTime.now();
+    final latLng = LatLng(position.latitude, position.longitude);
 
-    debugPrint('TRIP START DETECTED at ${DateHelpers.formatTime(start)}');
+    // iOS reports a negative speed when it has none; the detector derives it.
+    final speedMph = position.speed < 0
+        ? -1.0
+        : LocationService.speedMpsToMph(position.speed);
+    _lastSpeedMph = math.max(speedMph, 0);
+
+    if (_manualStart != null) {
+      if (_lastPoint != null) {
+        _manualDistance += DistanceCalculator.distanceBetween(_lastPoint!, latLng);
+      }
+      _manualRoute.add(LatLngPoint.fromLatLng(latLng));
+    }
+    _lastPoint = latLng;
+
+    final result = _detector.processLocation(
+      position: latLng,
+      speedMph: speedMph,
+      timestamp: now,
+      // A negative accuracy means the coordinates are invalid.
+      accuracyMeters: position.accuracy < 0 ? double.infinity : position.accuracy,
+    );
+    unawaited(_handleDetectorResult(result));
+    _publishActiveTrip();
   }
 
-  Future<void> _finalizeCurrentTrip(DateTime endTime, double distanceMiles) async {
-    if (_currentTripStart == null) return;
+  /// Closes a drive that ended while no GPS fixes were arriving. Runs every
+  /// 30 s while tracking, and whenever the app returns to the foreground.
+  Future<void> checkForEndedTrip() async {
+    await _handleDetectorResult(_detector.checkTimeout(DateTime.now()));
+    _publishActiveTrip();
+  }
 
-    final start = _currentTripStart!;
-    final durationMinutes =
-        endTime.difference(start).inMinutes.clamp(1, 9999);
+  Future<void> _handleDetectorResult(TripDetectionResult result) async {
+    if (result.isStart) {
+      debugPrint('TRIP START DETECTED at ${DateHelpers.formatTime(result.time!)}');
+    } else if (result.isEnd) {
+      await _saveDetectedTrip(result);
+    }
+  }
 
-    // Sample the route (keep every ~30s or ~100m worth of points).
-    // For simplicity we keep most points but thin them a bit here.
-    final sampled = _thinRoute(_currentRoute, maxPoints: 120);
+  Future<void> _saveDetectedTrip(TripDetectionResult result) async {
+    final start = result.startTime!;
+    final end = result.time!;
+    final points =
+        result.route.map((p) => LatLngPoint.fromLatLng(p)).toList();
 
     final trip = Trip(
       id: const Uuid().v4(),
       startTime: start,
-      endTime: endTime,
-      distanceMiles: distanceMiles,
-      durationMinutes: durationMinutes,
-      routePoints: sampled,
-      category: TripCategory.business, // default, user will change
+      endTime: end,
+      distanceMiles: result.distanceMiles!,
+      durationMinutes: end.difference(start).inMinutes.clamp(1, 9999),
+      routePoints: _thinRoute(points, maxPoints: 120),
+      // Not business until the user says so: an unreviewed drive must never
+      // count toward business miles or the deduction.
+      category: TripCategory.other,
       isConfirmed: false,
     );
 
     await _db.saveTrip(trip);
 
-    // Show the magic notification with quick actions
-    await _showTripEndedNotification(trip);
-
-    // Clear state
-    _currentTripStart = null;
-    _currentRoute.clear();
-    _currentDistance = 0;
-    _lastPoint = null;
-    activeTripNotifier.value = null;
+    if (_db.getSettings().notificationsEnabled) {
+      await _showTripEndedNotification(trip);
+    }
 
     debugPrint('TRIP ENDED: ${trip.formattedDistance} in ${trip.formattedDuration}');
+  }
+
+  void _publishActiveTrip() {
+    if (_manualStart != null) {
+      activeTripNotifier.value = ActiveTrip(
+        startTime: _manualStart!,
+        currentDistanceMiles: _manualDistance,
+        currentSpeedMph: _lastSpeedMph,
+        routePoints: List.from(_manualRoute),
+      );
+    } else if (_detector.isPotentialTrip) {
+      activeTripNotifier.value = ActiveTrip(
+        startTime: _detector.currentStart!,
+        currentDistanceMiles: _detector.currentMiles,
+        currentSpeedMph: _lastSpeedMph,
+        routePoints: _detector.currentRoute
+            .map((p) => LatLngPoint.fromLatLng(p))
+            .toList(),
+      );
+    } else {
+      activeTripNotifier.value = null;
+    }
   }
 
   List<LatLngPoint> _thinRoute(List<LatLngPoint> points, {int maxPoints = 120}) {
@@ -279,60 +375,68 @@ class TrackingService {
   }
 
   Future<void> _showTripEndedNotification(Trip trip) async {
-    final title = AppStrings.tripEndedNotificationTitle; // from strings
+    final title = AppStrings.tripEndedNotificationTitle;
     final body = AppStrings.tripEndedNotificationBody
         .replaceFirst('%s', trip.distanceMiles.toStringAsFixed(1));
 
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'milemaid_trips',
       'Trip Notifications',
       channelDescription: 'Classify your recent drive',
       importance: Importance.high,
       priority: Priority.high,
       actions: <AndroidNotificationAction>[
-        const AndroidNotificationAction(
-          'business',
+        AndroidNotificationAction(
+          actionBusiness,
           'Business',
           showsUserInterface: true,
         ),
-        const AndroidNotificationAction(
-          'personal',
+        AndroidNotificationAction(
+          actionPersonal,
           'Personal',
           showsUserInterface: true,
         ),
-        const AndroidNotificationAction(
-          'edit',
+        AndroidNotificationAction(
+          actionEdit,
           'Edit',
           showsUserInterface: true,
         ),
       ],
     );
 
-    final iosDetails = const DarwinNotificationDetails(
-      categoryIdentifier: 'trip_category',
+    const iosDetails = DarwinNotificationDetails(
+      categoryIdentifier: tripCategoryId,
     );
 
     await _notifications?.show(
       trip.id.hashCode, // unique per trip
       title,
       body,
-      NotificationDetails(android: androidDetails, iOS: iosDetails),
-      payload: 'classify:${trip.id}:business', // default payload, actions override
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      // Only the trip id: the category comes from the button the user taps.
+      payload: '$_payloadPrefix${trip.id}',
     );
   }
 
   /// Stop tracking (rarely used; app is meant to be always on).
   Future<void> stopTracking() async {
     _isTracking = false;
+    _endCheckTimer?.cancel();
+    _endCheckTimer = null;
     await _positionSubscription?.cancel();
     _positionSubscription = null;
-    await FlutterForegroundTask.stopService();
-    // Workmanager disabled
-    activeTripNotifier.value = null;
+    try {
+      await FlutterForegroundTask.stopService();
+    } catch (e) {
+      debugPrint('TrackingService: foreground service not stopped: $e');
+    }
+    // Keep a drive that was in progress.
+    await _handleDetectorResult(_detector.forceEnd(DateTime.now()));
+    _publishActiveTrip();
     debugPrint('TrackingService: STOPPED');
   }
 
-  /// Manually start a trip (used by "Add Manual Trip" or testing).
+  /// Manually start a trip (used by "Add Manual Trip" → live).
   Future<void> startManualTrip() async {
     final now = DateTime.now();
     final pos = await _locationService.getCurrentPosition();
@@ -340,35 +444,35 @@ class TrackingService {
         ? LatLng(pos.latitude, pos.longitude)
         : const LatLng(37.7749, -122.4194); // Demo fallback center (synthetic coordinates for sample/manual trips)
 
-    _currentTripStart = now;
-    _currentRoute.clear();
-    _currentRoute.add(LatLngPoint.fromLatLng(first));
-    _currentDistance = 0;
+    _manualStart = now;
+    _manualRoute
+      ..clear()
+      ..add(LatLngPoint.fromLatLng(first));
+    _manualDistance = 0;
     _lastPoint = first;
-
-    activeTripNotifier.value = ActiveTrip(
-      startTime: now,
-      currentDistanceMiles: 0,
-      currentSpeedMph: 0,
-      routePoints: List.from(_currentRoute),
-    );
+    _publishActiveTrip();
   }
 
-  /// Manually end the current trip (for manual or testing).
+  /// "End" on the live trip card. Ends a manual trip, or closes an
+  /// automatically detected drive right away (it still needs review).
   Future<Trip?> endManualTrip() async {
-    if (_currentTripStart == null) return null;
+    if (_manualStart == null) {
+      await _handleDetectorResult(_detector.forceEnd(DateTime.now()));
+      _publishActiveTrip();
+      return null;
+    }
 
     final now = DateTime.now();
-    final dist = math.max(_currentDistance, 0.3); // ensure min
-
-    final sampled = _thinRoute(_currentRoute, maxPoints: 80);
+    final start = _manualStart!;
+    final sampled = _thinRoute(_manualRoute, maxPoints: 80);
 
     final trip = Trip(
       id: const Uuid().v4(),
-      startTime: _currentTripStart!,
+      startTime: start,
       endTime: now,
-      distanceMiles: dist,
-      durationMinutes: now.difference(_currentTripStart!).inMinutes,
+      // The distance actually driven: never padded, since this feeds tax records.
+      distanceMiles: _manualDistance,
+      durationMinutes: now.difference(start).inMinutes,
       routePoints: sampled,
       category: TripCategory.business,
       isConfirmed: true,
@@ -376,10 +480,10 @@ class TrackingService {
 
     await _db.saveTrip(trip);
 
-    _currentTripStart = null;
-    _currentRoute.clear();
-    _currentDistance = 0;
-    activeTripNotifier.value = null;
+    _manualStart = null;
+    _manualRoute.clear();
+    _manualDistance = 0;
+    _publishActiveTrip();
 
     return trip;
   }
@@ -401,7 +505,6 @@ class TrackingTaskHandler extends TaskHandler {
   @override
   void onRepeatEvent(DateTime timestamp, SendPort? sendPort) {
     // Heartbeat. The real location stream runs in main isolate.
-    // We could do a direct location fetch here as extra safety.
   }
 
   @override

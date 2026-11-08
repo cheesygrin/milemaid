@@ -63,7 +63,7 @@ class AppStrings {
   static const String settings = 'Settings';
   static const String vehicles = 'Vehicles';
   static const String mileageRate = 'Mileage Rate';
-  static const String irsRateNote = '2026 IRS standard mileage rate';
+  static const String irsRateNote = 'IRS standard rate, by trip date';
   static const String trackingSensitivity = 'Tracking Sensitivity';
   static const String notifications = 'Notifications';
   static const String privacy = 'Privacy';

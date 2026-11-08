@@ -1,14 +1,33 @@
 /// IRS mileage rates and tax constants.
-/// Update yearly when IRS announces new rates.
+/// Add a row to [_businessRates] whenever the IRS announces a new rate.
 class IrsRates {
   IrsRates._();
 
-  /// 2026 Standard Mileage Rate (cents per mile).
-  /// Source: IRS Rev. Proc. 2025-13 (or successor). Edit as needed.
-  static const double standardRate2026 = 0.72; // $0.72 per mile
+  /// IRS standard mileage rates for business use, in dollars per mile, each
+  /// effective from its date until the next entry. The IRS can change the rate
+  /// mid-year, as it did on July 1, 2026, so the rate depends on the trip date.
+  ///   2024: 67¢ (Notice 2024-08)
+  ///   2025: 70¢ (Notice 2025-5)
+  ///   2026 Jan 1 – Jun 30: 72.5¢ (Notice 2026-10)
+  ///   2026 from Jul 1: 76¢ (Announcement 2026-11)
+  static final List<({DateTime from, double rate})> _businessRates = [
+    (from: DateTime(2024, 1, 1), rate: 0.67),
+    (from: DateTime(2025, 1, 1), rate: 0.70),
+    (from: DateTime(2026, 1, 1), rate: 0.725),
+    (from: DateTime(2026, 7, 1), rate: 0.76),
+  ];
 
-  /// Current active rate used by the app (editable in settings).
-  static double get currentRate => standardRate2026;
+  /// The IRS business rate in effect on [date].
+  static double rateFor(DateTime date) {
+    var rate = _businessRates.first.rate;
+    for (final entry in _businessRates) {
+      if (!date.isBefore(entry.from)) rate = entry.rate;
+    }
+    return rate;
+  }
+
+  /// The IRS business rate in effect today.
+  static double get currentRate => rateFor(DateTime.now());
 
   /// Returns the deduction amount for given business miles.
   static double deductionForMiles(double miles, [double? customRate]) {
@@ -16,8 +35,14 @@ class IrsRates {
     return miles * rate;
   }
 
-  /// Formatted rate string e.g. "$0.72"
-  static String get formattedRate => '\$${currentRate.toStringAsFixed(2)}';
+  /// Formatted rate string e.g. "$0.76" (three decimals when needed, e.g. "$0.725")
+  static String get formattedRate => format(currentRate);
+
+  static String format(double rate) {
+    final cents = rate * 1000;
+    final threeDecimals = (cents - cents.round()).abs() < 1e-6 && cents.round() % 10 != 0;
+    return '\$${rate.toStringAsFixed(threeDecimals ? 3 : 2)}';
+  }
 
   /// Strong legal disclaimer shown in PDFs and throughout the app.
   /// This is critical because the app produces documents people may use for taxes.
