@@ -268,6 +268,37 @@ void main() {
     });
   });
 
+  group('TripEnricher.enrichmentChanged', () {
+    test('false when enrich changed nothing', () {
+      final trip = _trip(route: [_pt(40.0, -100.0), _pt(40.0, -100.0)]);
+      expect(TripEnricher.enrichmentChanged(trip, trip), isFalse);
+    });
+
+    test('true when the start location id changed', () {
+      final before = _trip(route: [_pt(40.0, -100.0), _pt(40.0, -100.0)]);
+      final after = before.copyWith(startLocationId: 'p1');
+      expect(TripEnricher.enrichmentChanged(before, after), isTrue);
+    });
+
+    test('true when the start address changed', () {
+      final before = _trip(route: [_pt(40.0, -100.0), _pt(40.0, -100.0)]);
+      final after = before.copyWith(startAddress: '100 Main St');
+      expect(TripEnricher.enrichmentChanged(before, after), isTrue);
+    });
+
+    test('true when the end location id changed', () {
+      final before = _trip(route: [_pt(40.0, -100.0), _pt(40.0, -100.0)]);
+      final after = before.copyWith(endLocationId: 'p2');
+      expect(TripEnricher.enrichmentChanged(before, after), isTrue);
+    });
+
+    test('true when the end address changed', () {
+      final before = _trip(route: [_pt(40.0, -100.0), _pt(40.0, -100.0)]);
+      final after = before.copyWith(endAddress: '200 Oak Ave');
+      expect(TripEnricher.enrichmentChanged(before, after), isTrue);
+    });
+  });
+
   group('Trip JSON', () {
     test('round trip with the new fields', () {
       final trip = _trip(

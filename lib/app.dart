@@ -182,10 +182,16 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       // Close a drive that ended while the app wasn't getting GPS fixes.
       TrackingService().checkForEndedTrip();
       // Fill in missing addresses in the background (one pass at a time).
+      // Errors are swallowed here: a failed geocoder pass must never crash
+      // the app on resume; it just tries again next launch.
       if (!_backfillRunning) {
         _backfillRunning = true;
         TripEnricher.instance
             .backfill()
+            .catchError((Object e) {
+              debugPrint('TripEnricher.backfill failed: $e');
+              return 0;
+            })
             .whenComplete(() => _backfillRunning = false);
       }
       ref.read(dashboardProvider.notifier).refresh();
