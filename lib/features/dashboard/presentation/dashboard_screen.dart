@@ -83,6 +83,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
             ListView(
               padding: const EdgeInsets.only(bottom: 120),
               children: [
+                // New drives to review come first: swipe right = Business, left = Personal.
+                const ClassifyQueueSection(),
+
                 // Hero business miles - premium gradient + count-up
                 Padding(
                   padding: const EdgeInsets.fromLTRB(AppSpacing.m, AppSpacing.m, AppSpacing.m, AppSpacing.s),
@@ -155,7 +158,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ),
                 ),
 
-                const ClassifyQueueSection(),
 
                 // 7-day chart
                 Padding(

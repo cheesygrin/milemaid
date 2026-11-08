@@ -7,7 +7,9 @@ class AppConfig {
   /// `android/app/src/main/AndroidManifest.xml` (com.google.android.geo.API_KEY).
   /// While false, route maps are replaced with a graceful placeholder so
   /// reviewers never see a broken/blank map.
-  static const bool googleMapsEnabled = false;
+  /// On only in builds made with config/secrets.json (local, never committed),
+  /// which must go together with GOOGLE_MAPS_IOS_API_KEY in ios/Flutter/Secrets.xcconfig.
+  static const bool googleMapsEnabled = bool.fromEnvironment('GOOGLE_MAPS_ENABLED');
 
   /// v1 ships fully free. Flip to true only after real StoreKit/Play Billing
   /// subscriptions are implemented (App Store Guideline 3.1.1 forbids

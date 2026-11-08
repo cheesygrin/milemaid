@@ -53,8 +53,11 @@ class TrackingService {
   // For live UI updates (Riverpod will listen)
   final ValueNotifier<ActiveTrip?> activeTripNotifier = ValueNotifier(null);
 
-  /// Set when the user taps a drive notification (or its Edit button): the app
-  /// should open that trip so the user can classify it.
+  /// Set when the user taps a drive notification: the app shows the home
+  /// screen, where the drive waits on top as a swipe card.
+  final ValueNotifier<String?> pendingClassifyTripId = ValueNotifier(null);
+
+  /// Set when the user taps the notification's Edit button: open the trip.
   final ValueNotifier<String?> pendingReviewTripId = ValueNotifier(null);
 
   FlutterLocalNotificationsPlugin? _notifications;
@@ -136,10 +139,12 @@ class TrackingService {
       case actionPersonal:
         await _classifyTrip(tripId, TripCategory.personal);
         break;
-      default:
-        // The notification itself, or "Edit": open the trip without
-        // classifying it. It stays in the review queue until the user decides.
+      case actionEdit:
         pendingReviewTripId.value = tripId;
+        break;
+      default:
+        // The notification itself: open the swipe card, without classifying.
+        pendingClassifyTripId.value = tripId;
     }
   }
 

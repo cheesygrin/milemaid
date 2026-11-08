@@ -65,6 +65,7 @@ class ClassifyQueueSection extends ConsumerWidget {
         ),
         ...visible.map((trip) => SwipeableTripCard(
               trip: trip,
+              showMap: true,
               onTap: () => context.push('/trips/${trip.id}'),
               onClassified: (cat) => _onClassified(context, ref, trip.id, cat),
             )),

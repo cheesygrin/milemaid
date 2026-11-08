@@ -144,6 +144,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     };
 
     TrackingService().pendingReviewTripId.addListener(_openPendingTrip);
+    TrackingService().pendingClassifyTripId.addListener(_openPendingTrip);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _resumeTrackingIfNeeded();
@@ -156,18 +157,27 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     TrackingService().pendingReviewTripId.removeListener(_openPendingTrip);
+    TrackingService().pendingClassifyTripId.removeListener(_openPendingTrip);
     DatabaseService().onTripsChanged = null;
     super.dispose();
   }
 
-  /// Opens the trip from a tapped drive notification so it can be classified.
+  /// Handles a tapped drive notification: the notification itself goes to the
+  /// home screen, where the newest drive waits on top as a swipe card; its Edit
+  /// button opens the trip's details.
   void _openPendingTrip() {
-    final pending = TrackingService().pendingReviewTripId;
-    final id = pending.value;
-    if (id == null) return;
-    pending.value = null;
+    final tracking = TrackingService();
+    final classifyId = tracking.pendingClassifyTripId.value;
+    final reviewId = tracking.pendingReviewTripId.value;
+    if (classifyId == null && reviewId == null) return;
+    tracking.pendingClassifyTripId.value = null;
+    tracking.pendingReviewTripId.value = null;
     if (!DatabaseService().getSettings().hasCompletedOnboarding) return;
-    _router.push('/trips/$id');
+    if (reviewId != null) {
+      _router.push('/trips/$reviewId');
+    } else {
+      _router.go('/');
+    }
   }
 
   @override

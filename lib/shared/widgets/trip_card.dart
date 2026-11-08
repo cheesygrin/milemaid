@@ -10,11 +10,15 @@ class TripCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool showNeedsReview;
 
+  /// Optional full-width widget shown at the top of the card (route map preview).
+  final Widget? header;
+
   const TripCard({
     super.key,
     required this.trip,
     required this.onTap,
     this.showNeedsReview = false,
+    this.header,
   });
 
   @override
@@ -23,16 +27,21 @@ class TripCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Padding(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (header != null) header!,
+            Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  CategoryChip(category: trip.category),
+                  // An unreviewed drive has no category yet: show only the review badge.
+                  if (!showNeedsReview) CategoryChip(category: trip.category),
                   if (showNeedsReview) ...[
-                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
@@ -40,7 +49,7 @@ class TripCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Text(
-                        'Review',
+                        'Needs review',
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
@@ -108,6 +117,8 @@ class TripCard extends StatelessWidget {
               ),
             ],
           ),
+            ),
+          ],
         ),
       ),
     );

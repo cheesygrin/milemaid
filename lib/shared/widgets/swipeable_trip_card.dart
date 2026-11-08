@@ -4,6 +4,7 @@ import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/constants/design_tokens.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/shared/widgets/route_preview.dart';
 import 'package:milemaid/shared/widgets/trip_card.dart';
 
 /// Swipe right = Business, swipe left = Personal (MileIQ-style).
@@ -14,9 +15,12 @@ class SwipeableTripCard extends StatefulWidget {
     required this.onTap,
     required this.onClassified,
     this.enableSwipe = true,
+    this.showMap = false,
   });
 
   final Trip trip;
+  /// Show the route map preview at the top of the card (review queue).
+  final bool showMap;
   final VoidCallback onTap;
   final void Function(TripCategory category) onClassified;
   final bool enableSwipe;
@@ -139,7 +143,8 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
         borderRadius: BorderRadius.circular(AppRadius.m),
         child: Stack(
           children: [
-            Row(
+            Positioned.fill(
+              child: Row(
               children: [
                 Expanded(
                   child: _SwipeHint(
@@ -160,6 +165,7 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
                   ),
                 ),
               ],
+            ),
             ),
             AnimatedBuilder(
               animation: Listenable.merge([_exitSlide, _springController]),
@@ -183,6 +189,12 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
                     trip: widget.trip,
                     onTap: widget.onTap,
                     showNeedsReview: !widget.trip.isConfirmed,
+                    header: widget.showMap
+                        ? RoutePreview(
+                            cacheKey: '${widget.trip.id}:${widget.trip.routePoints.length}',
+                            points: widget.trip.routeLatLng,
+                          )
+                        : null,
                   ),
                 ),
               ),
@@ -212,7 +224,6 @@ class _SwipeHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 120,
       color: color.withValues(alpha: 0.12 + opacity * 0.2),
       alignment: alignment,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),

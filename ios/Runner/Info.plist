@@ -87,8 +87,8 @@
 	<string>MileMaid requires always-on location access so it can detect trip start and end without you having to press any buttons.</string>
 
 	<!-- Google Maps iOS key -->
-	<!-- TODO: Replace with your Google Maps API Key (enable Maps SDK for iOS) -->
+	<!-- Google Maps key comes from ios/Flutter/Secrets.xcconfig (gitignored). -->
 	<key>GMSApiKey</key>
-	<string>YOUR_GOOGLE_MAPS_API_KEY_HERE</string>
+	<string>$(GOOGLE_MAPS_IOS_API_KEY)</string>
 </dict>
 </plist>
