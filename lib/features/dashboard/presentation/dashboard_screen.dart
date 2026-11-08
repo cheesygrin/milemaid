@@ -152,6 +152,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           title: AppStrings.tripsLogged,
                           value: '${dash.tripsLogged}',
                           icon: Icons.list_alt,
+                          onTap: () => context.push('/trips'),
                         ),
                       ),
                     ],
