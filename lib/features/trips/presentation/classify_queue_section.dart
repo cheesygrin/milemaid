@@ -3,11 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/features/trips/providers/unconfirmed_trips_provider.dart';
 import 'package:milemaid/shared/widgets/swipeable_trip_card.dart';
+
+/// Current named places keyed by id, for the From/To labels on trip cards.
+Map<String, NamedLocation> get _placesById =>
+    locationsById(DatabaseService().getAllLocations());
 
 /// Review queue for drives that need classification (shown on dashboard).
 class ClassifyQueueSection extends ConsumerWidget {
@@ -67,6 +74,7 @@ class ClassifyQueueSection extends ConsumerWidget {
               trip: trip,
               onTap: () => context.push('/trips/${trip.id}'),
               onClassified: (cat) => _onClassified(context, ref, trip.id, cat),
+              placesById: _placesById,
             )),
         if (remaining > 0)
           Padding(

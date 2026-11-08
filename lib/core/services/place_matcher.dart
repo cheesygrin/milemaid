@@ -44,3 +44,8 @@ String placeLabel(
   if (trimmed.isNotEmpty) return trimmed;
   return 'Unknown place';
 }
+
+/// Convenience lookup map for [placeLabel].
+Map<String, NamedLocation> locationsById(List<NamedLocation> places) => {
+      for (final p in places) p.id: p,
+    };
