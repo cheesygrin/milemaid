@@ -188,6 +188,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
         ],
       ),
+      bottomNavigationBar: _buildBottomBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -346,10 +347,32 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           ],
 
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
 
-          // Quick actions
-          if (!_isEditing) ...[
-            Row(
+  void _cancelEdit() {
+    setState(() => _isEditing = false);
+    _loadTrip(); // revert
+  }
+
+  Widget _buildBottomBar() {
+    return SafeArea(
+      minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: _isEditing
+          ? Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(onPressed: _cancelEdit, child: const Text('Cancel')),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton(onPressed: _save, child: const Text('Save Changes')),
+                ),
+              ],
+            )
+          : Row(
               children: [
                 Expanded(
                   child: FilledButton.tonal(
@@ -368,27 +391,6 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                 ),
               ],
             ),
-          ] else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () {
-                      setState(() => _isEditing = false);
-                      _loadTrip(); // revert
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(onPressed: _save, child: const Text('Save Changes')),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
     );
   }
 
