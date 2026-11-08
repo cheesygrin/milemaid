@@ -44,7 +44,12 @@ class TripCard extends StatelessWidget {
               Row(
                 children: [
                   // An unreviewed drive has no category yet: show only the review badge.
-                  if (!showNeedsReview) CategoryChip(category: trip.category),
+                  if (!showNeedsReview)
+                    CategoryChip(
+                      category: trip.category,
+                      customLabel: trip.customCategoryLabel,
+                      customColorValue: trip.customCategoryColor,
+                    ),
                   if (showNeedsReview) ...[
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),

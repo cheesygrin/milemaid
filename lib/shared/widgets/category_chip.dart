@@ -3,15 +3,29 @@ import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/models/trip.dart';
 
 /// Beautiful small category pill used on TripCard and filters.
+/// Supports a user-defined custom label + color.
 class CategoryChip extends StatelessWidget {
   final TripCategory category;
+  final String? customLabel;
+  final int? customColorValue;
   final bool compact;
 
-  const CategoryChip({super.key, required this.category, this.compact = false});
+  const CategoryChip({
+    super.key,
+    required this.category,
+    this.customLabel,
+    this.customColorValue,
+    this.compact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.forCategory(category);
+    final custom = (customLabel?.isNotEmpty ?? false);
+    final color = custom
+        ? Color(customColorValue ?? 0xFF607D8B)
+        : AppColors.forCategory(category);
+    final icon = custom ? '🏷️' : category.icon;
+    final text = custom ? customLabel! : category.displayName;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: compact ? 8 : 10,
@@ -24,10 +38,10 @@ class CategoryChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(category.icon, style: TextStyle(fontSize: compact ? 10 : 12)),
+          Text(icon, style: TextStyle(fontSize: compact ? 10 : 12)),
           const SizedBox(width: 4),
           Text(
-            category.displayName,
+            text,
             style: TextStyle(
               color: color,
               fontSize: compact ? 11 : 12,

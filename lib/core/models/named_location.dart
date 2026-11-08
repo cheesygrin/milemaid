@@ -1,3 +1,5 @@
+import 'package:milemaid/core/models/trip.dart';
+
 /// A saved place used to auto-classify drives that start nearby.
 class NamedLocation {
   final String id;
@@ -5,6 +7,8 @@ class NamedLocation {
   final double lat;
   final double lng;
   final int radiusMeters;
+  /// Category assigned to drives that start near this place.
+  final TripCategory category;
 
   const NamedLocation({
     required this.id,
@@ -12,6 +16,7 @@ class NamedLocation {
     required this.lat,
     required this.lng,
     this.radiusMeters = 100,
+    this.category = TripCategory.business,
   });
 
   Map<String, dynamic> toJson() => {
@@ -20,6 +25,7 @@ class NamedLocation {
         'lat': lat,
         'lng': lng,
         'radiusMeters': radiusMeters,
+        'category': category.name,
       };
 
   static NamedLocation fromJson(Map<String, dynamic> j) => NamedLocation(
@@ -28,5 +34,8 @@ class NamedLocation {
         lat: (j['lat'] as num).toDouble(),
         lng: (j['lng'] as num).toDouble(),
         radiusMeters: j['radiusMeters'] as int? ?? 100,
+        category: j['category'] != null
+            ? TripCategory.values.firstWhere((c) => c.name == j['category'])
+            : TripCategory.business,
       );
 }

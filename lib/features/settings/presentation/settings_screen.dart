@@ -147,6 +147,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => _chooseSensitivity(context, ref, settings),
           ),
           ListTile(
+            leading: const Icon(Icons.label_outline),
+            title: const Text('Custom categories'),
+            subtitle: const Text('Label and color-code your drives'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/custom-categories'),
+          ),
+          ListTile(
             leading: const Icon(Icons.auto_awesome),
             title: const Text('Auto-classification'),
             subtitle: const Text('Work hours and named locations'),

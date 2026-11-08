@@ -21,7 +21,7 @@ class AutoClassifier {
       if (wh.covers(startTime)) return TripCategory.business;
     }
     for (final loc in namedLocations) {
-      if (_within(startLat, startLng, loc)) return TripCategory.business;
+      if (_within(startLat, startLng, loc)) return loc.category;
     }
     return null;
   }

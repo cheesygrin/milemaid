@@ -1,3 +1,4 @@
+import 'package:milemaid/core/models/category_label.dart';
 import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/user_settings.dart';
 import 'package:milemaid/core/models/vehicle.dart';
@@ -39,6 +40,10 @@ class Settings extends _$Settings {
 
   Future<void> setGeocodingEnabled(bool enabled) async {
     await update(state.copyWith(geocodingEnabled: enabled));
+  }
+
+  Future<void> setCustomCategories(List<CategoryLabel> categories) async {
+    await update(state.copyWith(customCategories: categories));
   }
 
   Future<void> toggleNotifications(bool enabled) async {

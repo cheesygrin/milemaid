@@ -6,6 +6,7 @@ import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/trip_expense.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
+import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/shared/widgets/category_chip.dart';
 import 'package:milemaid/shared/widgets/custom_map.dart';
@@ -27,6 +28,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   final _purposeCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   TripCategory _category = TripCategory.business;
+  String? _customLabel;
+  int? _customColor;
   double? _startOdo;
   double? _endOdo;
   List<TripExpense> _expenses = [];
@@ -49,6 +52,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
     _trip = trips[idx];
     _category = _trip.category;
+    _customLabel = _trip.customCategoryLabel;
+    _customColor = _trip.customCategoryColor;
     _purposeCtrl.text = _trip.purpose ?? '';
     _notesCtrl.text = _trip.notes ?? '';
     _startOdo = _trip.startOdometer;
@@ -59,6 +64,8 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   Future<void> _save() async {
     final updated = _trip.copyWith(
       category: _category,
+      customCategoryLabel: _customLabel,
+      customCategoryColor: _customColor,
       purpose: _purposeCtrl.text.trim().isEmpty ? null : _purposeCtrl.text.trim(),
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       startOdometer: _startOdo,
@@ -97,12 +104,16 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     final isBusiness = _trip.category == TripCategory.business;
     final updated = _trip.copyWith(
       category: isBusiness ? TripCategory.personal : TripCategory.business,
+      customCategoryLabel: null,
+      customCategoryColor: null,
       isConfirmed: true,
     );
     await ref.read(tripsProvider.notifier).addOrUpdateTrip(updated);
     setState(() {
       _trip = updated;
       _category = updated.category;
+      _customLabel = null;
+      _customColor = null;
     });
   }
 
@@ -178,6 +189,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final hasRoute = _trip.routePoints.length > 1;
+    final customCategories = ref.watch(settingsProvider).customCategories;
 
     return Scaffold(
       appBar: AppBar(
@@ -295,17 +307,40 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           if (_isEditing)
             Wrap(
               spacing: 8,
-              children: TripCategory.values.map((c) {
-                final sel = c == _category;
-                return ChoiceChip(
-                  label: Text(c.displayName),
-                  selected: sel,
-                  onSelected: (_) => setState(() => _category = c),
-                );
-              }).toList(),
+              runSpacing: 8,
+              children: [
+                ...TripCategory.values.map((c) {
+                  final sel = _customLabel == null && c == _category;
+                  return ChoiceChip(
+                    label: Text(c.displayName),
+                    selected: sel,
+                    onSelected: (_) => setState(() {
+                      _category = c;
+                      _customLabel = null;
+                      _customColor = null;
+                    }),
+                  );
+                }),
+                ...customCategories.map((cl) {
+                  final sel = _customLabel == cl.label;
+                  return ChoiceChip(
+                    label: Text(cl.label),
+                    selected: sel,
+                    onSelected: (_) => setState(() {
+                      _customLabel = cl.label;
+                      _customColor = cl.colorValue;
+                      _category = TripCategory.other;
+                    }),
+                  );
+                }),
+              ],
             )
           else
-            CategoryChip(category: _trip.category),
+            CategoryChip(
+              category: _trip.category,
+              customLabel: _trip.customCategoryLabel,
+              customColorValue: _trip.customCategoryColor,
+            ),
           const SizedBox(height: 20),
 
           // Editable fields

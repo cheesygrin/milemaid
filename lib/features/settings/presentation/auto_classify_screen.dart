@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:milemaid/core/models/named_location.dart';
+import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/work_hours.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
@@ -199,35 +200,52 @@ class _AutoClassifyScreenState extends ConsumerState<AutoClassifyScreen> {
   Future<void> _addLocation() async {
     final nameCtrl = TextEditingController();
     final radiusCtrl = TextEditingController(text: '100');
+    var cat = TripCategory.business;
 
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add location'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              autofocus: true,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            TextField(
-              controller: radiusCtrl,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Radius (meters)'),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'The location is saved at your current position.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => AlertDialog(
+          title: const Text('Add location'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: radiusCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Radius (meters)'),
+              ),
+              const SizedBox(height: 12),
+              const Text('Auto-classify as', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                children: TripCategory.values.map((c) {
+                  return ChoiceChip(
+                    label: Text(c.displayName),
+                    selected: c == cat,
+                    onSelected: (_) => setModal(() => cat = c),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'The location is saved at your current position.',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Save')),
-        ],
       ),
     );
     if (ok != true) return;
@@ -243,6 +261,7 @@ class _AutoClassifyScreenState extends ConsumerState<AutoClassifyScreen> {
       lat: pos?.latitude ?? 0.0,
       lng: pos?.longitude ?? 0.0,
       radiusMeters: radius,
+      category: cat,
     );
     ref.read(settingsProvider.notifier).setNamedLocations([
       ...ref.read(settingsProvider).namedLocations,

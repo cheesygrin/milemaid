@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:milemaid/core/constants/irs_rates.dart';
+import 'package:milemaid/core/models/category_label.dart';
 import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/work_hours.dart';
 
@@ -26,6 +27,8 @@ class UserSettings with _$UserSettings {
     @Default([]) List<WorkHours> workHours,
     /// Saved places that auto-classify drives starting near them as Business.
     @Default([]) List<NamedLocation> namedLocations,
+    /// User-defined category labels (label + color).
+    @Default([]) List<CategoryLabel> customCategories,
     /// Onboarding completed flag
     @Default(false) bool hasCompletedOnboarding,
     /// Last time we synced or updated (for future)
@@ -55,6 +58,9 @@ class UserSettings with _$UserSettings {
         namedLocations: (json['namedLocations'] as List<dynamic>? ?? [])
             .map((e) => NamedLocation.fromJson(e as Map<String, dynamic>))
             .toList(),
+        customCategories: (json['customCategories'] as List<dynamic>? ?? [])
+            .map((e) => CategoryLabel.fromJson(e as Map<String, dynamic>))
+            .toList(),
         hasCompletedOnboarding: json['hasCompletedOnboarding'] as bool? ?? false,
         lastUpdated: json['lastUpdated'] != null ? DateTime.parse(json['lastUpdated'] as String) : null,
         isPro: json['isPro'] as bool? ?? false,
@@ -72,6 +78,7 @@ class UserSettings with _$UserSettings {
         'defaultVehicleId': defaultVehicleId,
         'workHours': workHours.map((e) => e.toJson()).toList(),
         'namedLocations': namedLocations.map((e) => e.toJson()).toList(),
+        'customCategories': customCategories.map((e) => e.toJson()).toList(),
         'hasCompletedOnboarding': hasCompletedOnboarding,
         'lastUpdated': lastUpdated?.toIso8601String(),
         'isPro': isPro,

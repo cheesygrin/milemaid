@@ -23,6 +23,12 @@ mixin _$Trip {
   int get durationMinutes => throw _privateConstructorUsedError;
   List<LatLngPoint> get routePoints => throw _privateConstructorUsedError;
   TripCategory get category => throw _privateConstructorUsedError;
+
+  /// Optional user-defined category label (overrides the enum name in UI).
+  String? get customCategoryLabel => throw _privateConstructorUsedError;
+
+  /// ARGB color for the custom category label.
+  int? get customCategoryColor => throw _privateConstructorUsedError;
   String? get purpose => throw _privateConstructorUsedError;
   String? get notes => throw _privateConstructorUsedError;
 
@@ -54,6 +60,8 @@ abstract class $TripCopyWith<$Res> {
       int durationMinutes,
       List<LatLngPoint> routePoints,
       TripCategory category,
+      String? customCategoryLabel,
+      int? customCategoryColor,
       String? purpose,
       String? notes,
       String? startAddress,
@@ -85,6 +93,8 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
     Object? durationMinutes = null,
     Object? routePoints = null,
     Object? category = null,
+    Object? customCategoryLabel = freezed,
+    Object? customCategoryColor = freezed,
     Object? purpose = freezed,
     Object? notes = freezed,
     Object? startAddress = freezed,
@@ -124,6 +134,14 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
           ? _value.category
           : category // ignore: cast_nullable_to_non_nullable
               as TripCategory,
+      customCategoryLabel: freezed == customCategoryLabel
+          ? _value.customCategoryLabel
+          : customCategoryLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customCategoryColor: freezed == customCategoryColor
+          ? _value.customCategoryColor
+          : customCategoryColor // ignore: cast_nullable_to_non_nullable
+              as int?,
       purpose: freezed == purpose
           ? _value.purpose
           : purpose // ignore: cast_nullable_to_non_nullable
@@ -179,6 +197,8 @@ abstract class _$$TripImplCopyWith<$Res> implements $TripCopyWith<$Res> {
       int durationMinutes,
       List<LatLngPoint> routePoints,
       TripCategory category,
+      String? customCategoryLabel,
+      int? customCategoryColor,
       String? purpose,
       String? notes,
       String? startAddress,
@@ -207,6 +227,8 @@ class __$$TripImplCopyWithImpl<$Res>
     Object? durationMinutes = null,
     Object? routePoints = null,
     Object? category = null,
+    Object? customCategoryLabel = freezed,
+    Object? customCategoryColor = freezed,
     Object? purpose = freezed,
     Object? notes = freezed,
     Object? startAddress = freezed,
@@ -246,6 +268,14 @@ class __$$TripImplCopyWithImpl<$Res>
           ? _value.category
           : category // ignore: cast_nullable_to_non_nullable
               as TripCategory,
+      customCategoryLabel: freezed == customCategoryLabel
+          ? _value.customCategoryLabel
+          : customCategoryLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customCategoryColor: freezed == customCategoryColor
+          ? _value.customCategoryColor
+          : customCategoryColor // ignore: cast_nullable_to_non_nullable
+              as int?,
       purpose: freezed == purpose
           ? _value.purpose
           : purpose // ignore: cast_nullable_to_non_nullable
@@ -297,6 +327,8 @@ class _$TripImpl extends _Trip {
       required this.durationMinutes,
       required final List<LatLngPoint> routePoints,
       required this.category,
+      this.customCategoryLabel,
+      this.customCategoryColor,
       this.purpose,
       this.notes,
       this.startAddress,
@@ -330,6 +362,14 @@ class _$TripImpl extends _Trip {
 
   @override
   final TripCategory category;
+
+  /// Optional user-defined category label (overrides the enum name in UI).
+  @override
+  final String? customCategoryLabel;
+
+  /// ARGB color for the custom category label.
+  @override
+  final int? customCategoryColor;
   @override
   final String? purpose;
   @override
@@ -365,7 +405,7 @@ class _$TripImpl extends _Trip {
 
   @override
   String toString() {
-    return 'Trip(id: $id, startTime: $startTime, endTime: $endTime, distanceMiles: $distanceMiles, durationMinutes: $durationMinutes, routePoints: $routePoints, category: $category, purpose: $purpose, notes: $notes, startAddress: $startAddress, endAddress: $endAddress, expenses: $expenses, vehicleId: $vehicleId, startOdometer: $startOdometer, endOdometer: $endOdometer, isConfirmed: $isConfirmed)';
+    return 'Trip(id: $id, startTime: $startTime, endTime: $endTime, distanceMiles: $distanceMiles, durationMinutes: $durationMinutes, routePoints: $routePoints, category: $category, customCategoryLabel: $customCategoryLabel, customCategoryColor: $customCategoryColor, purpose: $purpose, notes: $notes, startAddress: $startAddress, endAddress: $endAddress, expenses: $expenses, vehicleId: $vehicleId, startOdometer: $startOdometer, endOdometer: $endOdometer, isConfirmed: $isConfirmed)';
   }
 
   @override
@@ -385,6 +425,10 @@ class _$TripImpl extends _Trip {
                 .equals(other._routePoints, _routePoints) &&
             (identical(other.category, category) ||
                 other.category == category) &&
+            (identical(other.customCategoryLabel, customCategoryLabel) ||
+                other.customCategoryLabel == customCategoryLabel) &&
+            (identical(other.customCategoryColor, customCategoryColor) ||
+                other.customCategoryColor == customCategoryColor) &&
             (identical(other.purpose, purpose) || other.purpose == purpose) &&
             (identical(other.notes, notes) || other.notes == notes) &&
             (identical(other.startAddress, startAddress) ||
@@ -412,6 +456,8 @@ class _$TripImpl extends _Trip {
       durationMinutes,
       const DeepCollectionEquality().hash(_routePoints),
       category,
+      customCategoryLabel,
+      customCategoryColor,
       purpose,
       notes,
       startAddress,
@@ -438,6 +484,8 @@ abstract class _Trip extends Trip {
       required final int durationMinutes,
       required final List<LatLngPoint> routePoints,
       required final TripCategory category,
+      final String? customCategoryLabel,
+      final int? customCategoryColor,
       final String? purpose,
       final String? notes,
       final String? startAddress,
@@ -463,6 +511,14 @@ abstract class _Trip extends Trip {
   List<LatLngPoint> get routePoints;
   @override
   TripCategory get category;
+  @override
+
+  /// Optional user-defined category label (overrides the enum name in UI).
+  String? get customCategoryLabel;
+  @override
+
+  /// ARGB color for the custom category label.
+  int? get customCategoryColor;
   @override
   String? get purpose;
   @override

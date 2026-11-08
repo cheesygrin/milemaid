@@ -233,7 +233,7 @@ class ExportService {
                         style: const pw.TextStyle(fontSize: 8),
                       )),
                       pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(trip.distanceMiles.toStringAsFixed(1), style: const pw.TextStyle(fontSize: 8))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(trip.category.displayName, style: const pw.TextStyle(fontSize: 8))),
+                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(trip.categoryLabel, style: const pw.TextStyle(fontSize: 8))),
                       pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(
                         (trip.purpose ?? trip.notes ?? '').toString().substring(0, (trip.purpose ?? trip.notes ?? '').length.clamp(0, 28)),
                         style: const pw.TextStyle(fontSize: 8),
@@ -310,7 +310,7 @@ class ExportService {
         DateFormat('HH:mm').format(t.endTime),
         t.distanceMiles.toStringAsFixed(2),
         t.durationMinutes,
-        t.category.displayName,
+        t.categoryLabel,
         _csvEscape(t.purpose ?? ''),
         _csvEscape(t.notes ?? ''),
         _csvEscape(t.startAddress ?? ''),

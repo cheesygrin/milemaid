@@ -75,6 +75,10 @@ class Trip with _$Trip {
     required int durationMinutes,
     required List<LatLngPoint> routePoints,
     required TripCategory category,
+    /// Optional user-defined category label (overrides the enum name in UI).
+    String? customCategoryLabel,
+    /// ARGB color for the custom category label.
+    int? customCategoryColor,
     String? purpose,
     String? notes,
     /// Human-readable start/end addresses (resolved via optional geocoding).
@@ -100,6 +104,8 @@ class Trip with _$Trip {
           .map((e) => LatLngPoint.fromJson(e as Map<String, dynamic>))
           .toList(),
       category: TripCategory.values.firstWhere((c) => c.name == (json['category'] as String)),
+      customCategoryLabel: json['customCategoryLabel'] as String?,
+      customCategoryColor: json['customCategoryColor'] as int?,
       purpose: json['purpose'] as String?,
       notes: json['notes'] as String?,
       startAddress: json['startAddress'] as String?,
@@ -122,6 +128,8 @@ class Trip with _$Trip {
         'durationMinutes': durationMinutes,
         'routePoints': routePoints.map((p) => p.toJson()).toList(),
         'category': category.name,
+        'customCategoryLabel': customCategoryLabel,
+        'customCategoryColor': customCategoryColor,
         'purpose': purpose,
         'notes': notes,
         'startAddress': startAddress,
@@ -150,6 +158,14 @@ class Trip with _$Trip {
 
   /// Business miles count only once the user has reviewed the trip.
   bool get countsAsBusiness => category == TripCategory.business && isConfirmed;
+
+  /// True when a user-defined category label is attached.
+  bool get hasCustomCategory =>
+      customCategoryLabel != null && customCategoryLabel!.isNotEmpty;
+
+  /// Display label: the custom label if present, else the enum name.
+  String get categoryLabel =>
+      hasCustomCategory ? customCategoryLabel! : category.displayName;
 
   /// Total of attached expenses in cents (exact integer, for aggregation).
   int get totalExpenseCents =>

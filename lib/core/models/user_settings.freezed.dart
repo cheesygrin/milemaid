@@ -37,6 +37,10 @@ mixin _$UserSettings {
   /// Saved places that auto-classify drives starting near them as Business.
   List<NamedLocation> get namedLocations => throw _privateConstructorUsedError;
 
+  /// User-defined category labels (label + color).
+  List<CategoryLabel> get customCategories =>
+      throw _privateConstructorUsedError;
+
   /// Onboarding completed flag
   bool get hasCompletedOnboarding => throw _privateConstructorUsedError;
 
@@ -72,6 +76,7 @@ abstract class $UserSettingsCopyWith<$Res> {
       String defaultVehicleId,
       List<WorkHours> workHours,
       List<NamedLocation> namedLocations,
+      List<CategoryLabel> customCategories,
       bool hasCompletedOnboarding,
       DateTime? lastUpdated,
       bool isPro,
@@ -101,6 +106,7 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
     Object? defaultVehicleId = null,
     Object? workHours = null,
     Object? namedLocations = null,
+    Object? customCategories = null,
     Object? hasCompletedOnboarding = null,
     Object? lastUpdated = freezed,
     Object? isPro = null,
@@ -147,6 +153,10 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
           ? _value.namedLocations
           : namedLocations // ignore: cast_nullable_to_non_nullable
               as List<NamedLocation>,
+      customCategories: null == customCategories
+          ? _value.customCategories
+          : customCategories // ignore: cast_nullable_to_non_nullable
+              as List<CategoryLabel>,
       hasCompletedOnboarding: null == hasCompletedOnboarding
           ? _value.hasCompletedOnboarding
           : hasCompletedOnboarding // ignore: cast_nullable_to_non_nullable
@@ -186,6 +196,7 @@ abstract class _$$UserSettingsImplCopyWith<$Res>
       String defaultVehicleId,
       List<WorkHours> workHours,
       List<NamedLocation> namedLocations,
+      List<CategoryLabel> customCategories,
       bool hasCompletedOnboarding,
       DateTime? lastUpdated,
       bool isPro,
@@ -213,6 +224,7 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
     Object? defaultVehicleId = null,
     Object? workHours = null,
     Object? namedLocations = null,
+    Object? customCategories = null,
     Object? hasCompletedOnboarding = null,
     Object? lastUpdated = freezed,
     Object? isPro = null,
@@ -259,6 +271,10 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
           ? _value._namedLocations
           : namedLocations // ignore: cast_nullable_to_non_nullable
               as List<NamedLocation>,
+      customCategories: null == customCategories
+          ? _value._customCategories
+          : customCategories // ignore: cast_nullable_to_non_nullable
+              as List<CategoryLabel>,
       hasCompletedOnboarding: null == hasCompletedOnboarding
           ? _value.hasCompletedOnboarding
           : hasCompletedOnboarding // ignore: cast_nullable_to_non_nullable
@@ -293,12 +309,14 @@ class _$UserSettingsImpl extends _UserSettings {
       this.defaultVehicleId = '',
       final List<WorkHours> workHours = const [],
       final List<NamedLocation> namedLocations = const [],
+      final List<CategoryLabel> customCategories = const [],
       this.hasCompletedOnboarding = false,
       this.lastUpdated,
       this.isPro = false,
       this.themeMode = 'system'})
       : _workHours = workHours,
         _namedLocations = namedLocations,
+        _customCategories = customCategories,
         super._();
 
   @override
@@ -356,6 +374,19 @@ class _$UserSettingsImpl extends _UserSettings {
     return EqualUnmodifiableListView(_namedLocations);
   }
 
+  /// User-defined category labels (label + color).
+  final List<CategoryLabel> _customCategories;
+
+  /// User-defined category labels (label + color).
+  @override
+  @JsonKey()
+  List<CategoryLabel> get customCategories {
+    if (_customCategories is EqualUnmodifiableListView)
+      return _customCategories;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_customCategories);
+  }
+
   /// Onboarding completed flag
   @override
   @JsonKey()
@@ -378,7 +409,7 @@ class _$UserSettingsImpl extends _UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, geocodingEnabled: $geocodingEnabled, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
+    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, geocodingEnabled: $geocodingEnabled, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, customCategories: $customCategories, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
   }
 
   @override
@@ -404,6 +435,8 @@ class _$UserSettingsImpl extends _UserSettings {
                 .equals(other._workHours, _workHours) &&
             const DeepCollectionEquality()
                 .equals(other._namedLocations, _namedLocations) &&
+            const DeepCollectionEquality()
+                .equals(other._customCategories, _customCategories) &&
             (identical(other.hasCompletedOnboarding, hasCompletedOnboarding) ||
                 other.hasCompletedOnboarding == hasCompletedOnboarding) &&
             (identical(other.lastUpdated, lastUpdated) ||
@@ -426,6 +459,7 @@ class _$UserSettingsImpl extends _UserSettings {
       defaultVehicleId,
       const DeepCollectionEquality().hash(_workHours),
       const DeepCollectionEquality().hash(_namedLocations),
+      const DeepCollectionEquality().hash(_customCategories),
       hasCompletedOnboarding,
       lastUpdated,
       isPro,
@@ -450,6 +484,7 @@ abstract class _UserSettings extends UserSettings {
       final String defaultVehicleId,
       final List<WorkHours> workHours,
       final List<NamedLocation> namedLocations,
+      final List<CategoryLabel> customCategories,
       final bool hasCompletedOnboarding,
       final DateTime? lastUpdated,
       final bool isPro,
@@ -485,6 +520,10 @@ abstract class _UserSettings extends UserSettings {
 
   /// Saved places that auto-classify drives starting near them as Business.
   List<NamedLocation> get namedLocations;
+  @override
+
+  /// User-defined category labels (label + color).
+  List<CategoryLabel> get customCategories;
   @override
 
   /// Onboarding completed flag
