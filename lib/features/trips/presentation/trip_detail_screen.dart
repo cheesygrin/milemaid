@@ -120,6 +120,58 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
+  /// Purpose preset chips: the end place's [NamedLocation.defaultPurpose]
+  /// first (highlighted as a suggestion, never auto-applied), then the
+  /// presets sorted by [PurposePreset.sortOrder].
+  List<Widget> get _purposeChips {
+    final chips = <Widget>[];
+
+    final endPlace = _placesById[_trip.endLocationId];
+    final suggestion = endPlace?.defaultPurpose;
+    if (suggestion != null && suggestion.isNotEmpty) {
+      chips.add(
+        ActionChip(
+          tooltip: 'Suggested from ${endPlace!.name}',
+          backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.6)),
+          label: Text(
+            suggestion,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accent,
+            ),
+          ),
+          onPressed: () => _applyPurpose(
+            suggestion,
+            endPlace.defaultCategory ?? _category,
+          ),
+        ),
+      );
+    }
+
+    final presets = DatabaseService().getAllPurposes();
+    chips.addAll(
+      presets.map(
+        (p) => ActionChip(
+          label: Text(p.name, style: const TextStyle(fontSize: 13)),
+          onPressed: () => _applyPurpose(p.name, p.category),
+        ),
+      ),
+    );
+    return chips;
+  }
+
+  /// Fills the purpose/category draft from a tapped chip and reveals the
+  /// Save button; nothing is written until the user saves.
+  void _applyPurpose(String purpose, TripCategory category) {
+    setState(() {
+      _category = category;
+      _purposeCtrl.text = purpose;
+      _isEditing = true;
+    });
+  }
+
   Widget _endpointRow(
     String title,
     String? locationId,
@@ -330,6 +382,19 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           else
             CategoryChip(category: _trip.category),
           const SizedBox(height: 20),
+
+          // Purpose presets (sorted by sortOrder); the trip's end place may
+          // suggest one first. Tapping a chip fills the purpose text and
+          // category; the existing Save confirms the trip. Free-text editing
+          // below still works.
+          if (_purposeChips.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _purposeChips,
+            ),
+            const SizedBox(height: 12),
+          ],
 
           // Editable fields
           TextField(
