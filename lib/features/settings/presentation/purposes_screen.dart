@@ -31,9 +31,6 @@ class _PurposesScreenState extends ConsumerState<PurposesScreen> {
   }
 
   Future<void> _persistOrder(int oldIndex, int newIndex) async {
-    // ReorderableListView quirk: the drop index is one past the target when
-    // moving down.
-    if (newIndex > oldIndex) newIndex -= 1;
     final presets = [..._presets];
     final moved = presets.removeAt(oldIndex);
     presets.insert(newIndex, moved);
@@ -145,7 +142,7 @@ class _PurposesScreenState extends ConsumerState<PurposesScreen> {
             )
           : ReorderableListView.builder(
               itemCount: _presets.length,
-              onReorder: _persistOrder,
+              onReorderItem: _persistOrder,
               itemBuilder: (ctx, i) {
                 final preset = _presets[i];
                 return ListTile(
