@@ -31,7 +31,7 @@ class TripCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (header != null) header!,
+            ?header,
             Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

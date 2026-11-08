@@ -18,7 +18,7 @@ class RoutePreview extends StatefulWidget {
     this.height = 130,
   });
 
-  /// Unique per drive (and per route), e.g. "<tripId>:<pointCount>".
+  /// Unique per drive (and per route), e.g. `<tripId>:<pointCount>`.
   final String cacheKey;
   final List<LatLng> points;
   final double height;
