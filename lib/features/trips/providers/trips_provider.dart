@@ -37,6 +37,16 @@ class Trips extends _$Trips {
     );
   }
 
+  /// Revert a swipe classification (Undo). Restores the prior category and
+  /// returns the trip to the pending review queue.
+  Future<void> unclassifyTrip(String id, TripCategory category) async {
+    final idx = state.indexWhere((t) => t.id == id);
+    if (idx == -1) return;
+    await addOrUpdateTrip(
+      state[idx].copyWith(category: category, isConfirmed: false),
+    );
+  }
+
   Future<Trip?> duplicateAsReturn(String originalId) async {
     final original = state.firstWhere((t) => t.id == originalId, orElse: () => throw Exception('Not found'));
     final now = DateTime.now();

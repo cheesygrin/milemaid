@@ -176,7 +176,8 @@ class _TripsListScreenState extends ConsumerState<TripsListScreen> {
                                   (trip) => SwipeableTripCard(
                                     trip: trip,
                                     onTap: () => context.push('/trips/${trip.id}'),
-                                    onClassified: (cat) => _classify(context, trip.id, cat),
+                                    onClassified: (cat) =>
+                        _classify(context, trip.id, cat, trip.category),
                                   ),
                                 ),
                               ],
@@ -190,15 +191,33 @@ class _TripsListScreenState extends ConsumerState<TripsListScreen> {
     );
   }
 
-  Future<void> _classify(BuildContext context, String tripId, TripCategory category) async {
+  Future<void> _classify(
+    BuildContext context,
+    String tripId,
+    TripCategory category,
+    TripCategory previousCategory,
+  ) async {
     await ref.read(tripsProvider.notifier).classifyTrip(tripId, category);
     ref.read(dashboardProvider.notifier).refresh();
-    if (context.mounted) {
-      final label = category == TripCategory.business ? AppStrings.business : AppStrings.personal;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppStrings.classifiedAs(label))),
+    if (!context.mounted) return;
+    final label = category == TripCategory.business ? AppStrings.business : AppStrings.personal;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(AppStrings.classifiedAs(label)),
+          duration: const Duration(seconds: 1),
+          action: SnackBarAction(
+            label: AppStrings.undo,
+            onPressed: () => _undoClassification(tripId, previousCategory),
+          ),
+        ),
       );
-    }
+  }
+
+  Future<void> _undoClassification(String tripId, TripCategory previousCategory) async {
+    await ref.read(tripsProvider.notifier).unclassifyTrip(tripId, previousCategory);
+    ref.read(dashboardProvider.notifier).refresh();
   }
 
   Widget _filterChip({

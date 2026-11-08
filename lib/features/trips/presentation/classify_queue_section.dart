@@ -67,7 +67,8 @@ class ClassifyQueueSection extends ConsumerWidget {
               trip: trip,
               showMap: true,
               onTap: () => context.push('/trips/${trip.id}'),
-              onClassified: (cat) => _onClassified(context, ref, trip.id, cat),
+              onClassified: (cat) =>
+                  _onClassified(context, ref, trip.id, cat, trip.category),
             )),
         if (remaining > 0)
           Padding(
@@ -87,17 +88,32 @@ class ClassifyQueueSection extends ConsumerWidget {
     WidgetRef ref,
     String tripId,
     TripCategory category,
+    TripCategory previousCategory,
   ) async {
     await ref.read(tripsProvider.notifier).classifyTrip(tripId, category);
     ref.read(dashboardProvider.notifier).refresh();
-    if (context.mounted) {
-      final label = category == TripCategory.business ? AppStrings.business : AppStrings.personal;
-      ScaffoldMessenger.of(context).showSnackBar(
+    if (!context.mounted) return;
+    final label = category == TripCategory.business ? AppStrings.business : AppStrings.personal;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
         SnackBar(
           content: Text(AppStrings.classifiedAs(label)),
-          duration: const Duration(seconds: 2),
+          duration: const Duration(seconds: 1),
+          action: SnackBarAction(
+            label: AppStrings.undo,
+            onPressed: () => _undoClassification(ref, tripId, previousCategory),
+          ),
         ),
       );
-    }
+  }
+
+  Future<void> _undoClassification(
+    WidgetRef ref,
+    String tripId,
+    TripCategory previousCategory,
+  ) async {
+    await ref.read(tripsProvider.notifier).unclassifyTrip(tripId, previousCategory);
+    ref.read(dashboardProvider.notifier).refresh();
   }
 }

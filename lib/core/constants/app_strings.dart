@@ -81,6 +81,7 @@ class AppStrings {
 
   // Misc
   static const String cancel = 'Cancel';
+  static const String undo = 'Undo';
   static const String save = 'Save';
   static const String delete = 'Delete';
   static const String confirm = 'Confirm';
