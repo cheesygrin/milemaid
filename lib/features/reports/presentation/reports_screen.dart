@@ -85,6 +85,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               ),
             ),
           ),
+          if (report.expenseTotal > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Expenses (tolls & parking)', style: TextStyle(fontSize: 14)),
+                  Text(
+                    r'$' '${report.expenseTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+            ),
 
           const SizedBox(height: 16),
           const Text('Category Breakdown', style: TextStyle(fontWeight: FontWeight.w600)),

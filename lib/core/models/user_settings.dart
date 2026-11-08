@@ -18,6 +18,9 @@ class UserSettings with _$UserSettings {
     @Default('Balanced') String trackingSensitivity, // High / Balanced / Battery Saver
     @Default(true) bool notificationsEnabled,
     @Default(true) bool tripEndConfirmation,
+    /// Resolve start/end addresses from coordinates. Opt-in: it sends
+    /// coordinates to a third-party geocoder (Nominatim).
+    @Default(false) bool geocodingEnabled,
     @Default('') String defaultVehicleId,
     /// Work-hours windows that auto-classify drives as Business.
     @Default([]) List<WorkHours> workHours,
@@ -44,6 +47,7 @@ class UserSettings with _$UserSettings {
         trackingSensitivity: json['trackingSensitivity'] as String? ?? 'Balanced',
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
         tripEndConfirmation: json['tripEndConfirmation'] as bool? ?? true,
+        geocodingEnabled: json['geocodingEnabled'] as bool? ?? false,
         defaultVehicleId: json['defaultVehicleId'] as String? ?? '',
         workHours: (json['workHours'] as List<dynamic>? ?? [])
             .map((e) => WorkHours.fromJson(e as Map<String, dynamic>))
@@ -64,6 +68,7 @@ class UserSettings with _$UserSettings {
         'trackingSensitivity': trackingSensitivity,
         'notificationsEnabled': notificationsEnabled,
         'tripEndConfirmation': tripEndConfirmation,
+        'geocodingEnabled': geocodingEnabled,
         'defaultVehicleId': defaultVehicleId,
         'workHours': workHours.map((e) => e.toJson()).toList(),
         'namedLocations': namedLocations.map((e) => e.toJson()).toList(),

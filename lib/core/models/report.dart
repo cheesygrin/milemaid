@@ -19,6 +19,8 @@ class Report with _$Report {
     required int totalTrips,
     required double deductionAmount,
     required double rateUsed,
+    /// Sum of toll/parking/other expenses across the range, in dollars.
+    @Default(0.0) double expenseTotal,
   }) = _Report;
 
   /// Generate a Report aggregate from a list of trips for the given date range.
@@ -31,10 +33,12 @@ class Report with _$Report {
     double total = 0;
     double deduction = 0;
     double biz = 0, pers = 0, comm = 0, oth = 0;
+    int expenseCents = 0;
     int count = trips.length;
 
     for (final t in trips) {
       total += t.distanceMiles;
+      expenseCents += t.totalExpenseCents;
       switch (t.category) {
         case TripCategory.business:
           if (t.countsAsBusiness) {
@@ -70,6 +74,7 @@ class Report with _$Report {
       deductionAmount: deduction,
       // Average across the trips (the IRS rate can change within a period).
       rateUsed: biz > 0 ? deduction / biz : rateFor(endDate),
+      expenseTotal: expenseCents / 100.0,
     );
   }
 }

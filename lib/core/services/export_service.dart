@@ -134,6 +134,16 @@ class ExportService {
                         style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColor.fromInt(0xFF00C853))),
                   ],
                 ),
+                pw.SizedBox(height: 8),
+                if (report.expenseTotal > 0)
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text('Expenses (tolls & parking)', style: const pw.TextStyle(fontSize: 11)),
+                      pw.Text(r'$' + report.expenseTotal.toStringAsFixed(2),
+                          style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
               ],
             ),
           ),
@@ -292,7 +302,7 @@ class ExportService {
     final trips = _db.getTripsInRange(start, end);
     final buffer = StringBuffer();
 
-    buffer.writeln('Date,Start Time,End Time,Distance (mi),Duration (min),Category,Purpose,Notes,Vehicle ID');
+    buffer.writeln('Date,Start Time,End Time,Distance (mi),Duration (min),Category,Purpose,Notes,Start Address,End Address,Expenses (USD),Vehicle ID');
     for (final t in trips) {
       buffer.writeln([
         DateFormat('yyyy-MM-dd').format(t.startTime),
@@ -303,6 +313,9 @@ class ExportService {
         t.category.displayName,
         _csvEscape(t.purpose ?? ''),
         _csvEscape(t.notes ?? ''),
+        _csvEscape(t.startAddress ?? ''),
+        _csvEscape(t.endAddress ?? ''),
+        t.totalExpenses.toStringAsFixed(2),
         t.vehicleId ?? '',
       ].join(','));
     }

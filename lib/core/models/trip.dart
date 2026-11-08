@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:milemaid/core/models/trip_expense.dart';
 
 part 'trip.freezed.dart';
 
@@ -76,6 +77,11 @@ class Trip with _$Trip {
     required TripCategory category,
     String? purpose,
     String? notes,
+    /// Human-readable start/end addresses (resolved via optional geocoding).
+    String? startAddress,
+    String? endAddress,
+    /// Tolls, parking, and other out-of-pocket expenses attached to the trip.
+    @Default([]) List<TripExpense> expenses,
     String? vehicleId,
     double? startOdometer,
     double? endOdometer,
@@ -96,6 +102,11 @@ class Trip with _$Trip {
       category: TripCategory.values.firstWhere((c) => c.name == (json['category'] as String)),
       purpose: json['purpose'] as String?,
       notes: json['notes'] as String?,
+      startAddress: json['startAddress'] as String?,
+      endAddress: json['endAddress'] as String?,
+      expenses: (json['expenses'] as List<dynamic>? ?? [])
+          .map((e) => TripExpense.fromJson(e as Map<String, dynamic>))
+          .toList(),
       vehicleId: json['vehicleId'] as String?,
       startOdometer: (json['startOdometer'] as num?)?.toDouble(),
       endOdometer: (json['endOdometer'] as num?)?.toDouble(),
@@ -113,6 +124,9 @@ class Trip with _$Trip {
         'category': category.name,
         'purpose': purpose,
         'notes': notes,
+        'startAddress': startAddress,
+        'endAddress': endAddress,
+        'expenses': expenses.map((e) => e.toJson()).toList(),
         'vehicleId': vehicleId,
         'startOdometer': startOdometer,
         'endOdometer': endOdometer,
@@ -136,4 +150,11 @@ class Trip with _$Trip {
 
   /// Business miles count only once the user has reviewed the trip.
   bool get countsAsBusiness => category == TripCategory.business && isConfirmed;
+
+  /// Total of attached expenses in cents (exact integer, for aggregation).
+  int get totalExpenseCents =>
+      expenses.fold(0, (sum, e) => sum + e.amountCents);
+
+  /// Total of attached expenses (tolls, parking, etc.), in dollars.
+  double get totalExpenses => totalExpenseCents / 100.0;
 }

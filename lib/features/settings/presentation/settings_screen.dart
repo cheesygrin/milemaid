@@ -135,6 +135,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             value: settings.notificationsEnabled,
             onChanged: (v) => ref.read(settingsProvider.notifier).toggleNotifications(v),
           ),
+          SwitchListTile(
+            title: const Text('Record addresses'),
+            subtitle: const Text('Resolve trip start/end addresses via an online service (OpenStreetMap)'),
+            value: settings.geocodingEnabled,
+            onChanged: (v) => ref.read(settingsProvider.notifier).setGeocodingEnabled(v),
+          ),
           ListTile(
             title: const Text(AppStrings.trackingSensitivity),
             subtitle: Text(settings.trackingSensitivity),

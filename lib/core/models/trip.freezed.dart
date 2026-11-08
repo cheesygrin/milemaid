@@ -25,6 +25,13 @@ mixin _$Trip {
   TripCategory get category => throw _privateConstructorUsedError;
   String? get purpose => throw _privateConstructorUsedError;
   String? get notes => throw _privateConstructorUsedError;
+
+  /// Human-readable start/end addresses (resolved via optional geocoding).
+  String? get startAddress => throw _privateConstructorUsedError;
+  String? get endAddress => throw _privateConstructorUsedError;
+
+  /// Tolls, parking, and other out-of-pocket expenses attached to the trip.
+  List<TripExpense> get expenses => throw _privateConstructorUsedError;
   String? get vehicleId => throw _privateConstructorUsedError;
   double? get startOdometer => throw _privateConstructorUsedError;
   double? get endOdometer => throw _privateConstructorUsedError;
@@ -49,6 +56,9 @@ abstract class $TripCopyWith<$Res> {
       TripCategory category,
       String? purpose,
       String? notes,
+      String? startAddress,
+      String? endAddress,
+      List<TripExpense> expenses,
       String? vehicleId,
       double? startOdometer,
       double? endOdometer,
@@ -77,6 +87,9 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
     Object? category = null,
     Object? purpose = freezed,
     Object? notes = freezed,
+    Object? startAddress = freezed,
+    Object? endAddress = freezed,
+    Object? expenses = null,
     Object? vehicleId = freezed,
     Object? startOdometer = freezed,
     Object? endOdometer = freezed,
@@ -119,6 +132,18 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
           ? _value.notes
           : notes // ignore: cast_nullable_to_non_nullable
               as String?,
+      startAddress: freezed == startAddress
+          ? _value.startAddress
+          : startAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endAddress: freezed == endAddress
+          ? _value.endAddress
+          : endAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      expenses: null == expenses
+          ? _value.expenses
+          : expenses // ignore: cast_nullable_to_non_nullable
+              as List<TripExpense>,
       vehicleId: freezed == vehicleId
           ? _value.vehicleId
           : vehicleId // ignore: cast_nullable_to_non_nullable
@@ -156,6 +181,9 @@ abstract class _$$TripImplCopyWith<$Res> implements $TripCopyWith<$Res> {
       TripCategory category,
       String? purpose,
       String? notes,
+      String? startAddress,
+      String? endAddress,
+      List<TripExpense> expenses,
       String? vehicleId,
       double? startOdometer,
       double? endOdometer,
@@ -181,6 +209,9 @@ class __$$TripImplCopyWithImpl<$Res>
     Object? category = null,
     Object? purpose = freezed,
     Object? notes = freezed,
+    Object? startAddress = freezed,
+    Object? endAddress = freezed,
+    Object? expenses = null,
     Object? vehicleId = freezed,
     Object? startOdometer = freezed,
     Object? endOdometer = freezed,
@@ -223,6 +254,18 @@ class __$$TripImplCopyWithImpl<$Res>
           ? _value.notes
           : notes // ignore: cast_nullable_to_non_nullable
               as String?,
+      startAddress: freezed == startAddress
+          ? _value.startAddress
+          : startAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endAddress: freezed == endAddress
+          ? _value.endAddress
+          : endAddress // ignore: cast_nullable_to_non_nullable
+              as String?,
+      expenses: null == expenses
+          ? _value._expenses
+          : expenses // ignore: cast_nullable_to_non_nullable
+              as List<TripExpense>,
       vehicleId: freezed == vehicleId
           ? _value.vehicleId
           : vehicleId // ignore: cast_nullable_to_non_nullable
@@ -256,11 +299,15 @@ class _$TripImpl extends _Trip {
       required this.category,
       this.purpose,
       this.notes,
+      this.startAddress,
+      this.endAddress,
+      final List<TripExpense> expenses = const [],
       this.vehicleId,
       this.startOdometer,
       this.endOdometer,
       this.isConfirmed = false})
       : _routePoints = routePoints,
+        _expenses = expenses,
         super._();
 
   @override
@@ -287,6 +334,25 @@ class _$TripImpl extends _Trip {
   final String? purpose;
   @override
   final String? notes;
+
+  /// Human-readable start/end addresses (resolved via optional geocoding).
+  @override
+  final String? startAddress;
+  @override
+  final String? endAddress;
+
+  /// Tolls, parking, and other out-of-pocket expenses attached to the trip.
+  final List<TripExpense> _expenses;
+
+  /// Tolls, parking, and other out-of-pocket expenses attached to the trip.
+  @override
+  @JsonKey()
+  List<TripExpense> get expenses {
+    if (_expenses is EqualUnmodifiableListView) return _expenses;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_expenses);
+  }
+
   @override
   final String? vehicleId;
   @override
@@ -299,7 +365,7 @@ class _$TripImpl extends _Trip {
 
   @override
   String toString() {
-    return 'Trip(id: $id, startTime: $startTime, endTime: $endTime, distanceMiles: $distanceMiles, durationMinutes: $durationMinutes, routePoints: $routePoints, category: $category, purpose: $purpose, notes: $notes, vehicleId: $vehicleId, startOdometer: $startOdometer, endOdometer: $endOdometer, isConfirmed: $isConfirmed)';
+    return 'Trip(id: $id, startTime: $startTime, endTime: $endTime, distanceMiles: $distanceMiles, durationMinutes: $durationMinutes, routePoints: $routePoints, category: $category, purpose: $purpose, notes: $notes, startAddress: $startAddress, endAddress: $endAddress, expenses: $expenses, vehicleId: $vehicleId, startOdometer: $startOdometer, endOdometer: $endOdometer, isConfirmed: $isConfirmed)';
   }
 
   @override
@@ -321,6 +387,11 @@ class _$TripImpl extends _Trip {
                 other.category == category) &&
             (identical(other.purpose, purpose) || other.purpose == purpose) &&
             (identical(other.notes, notes) || other.notes == notes) &&
+            (identical(other.startAddress, startAddress) ||
+                other.startAddress == startAddress) &&
+            (identical(other.endAddress, endAddress) ||
+                other.endAddress == endAddress) &&
+            const DeepCollectionEquality().equals(other._expenses, _expenses) &&
             (identical(other.vehicleId, vehicleId) ||
                 other.vehicleId == vehicleId) &&
             (identical(other.startOdometer, startOdometer) ||
@@ -343,6 +414,9 @@ class _$TripImpl extends _Trip {
       category,
       purpose,
       notes,
+      startAddress,
+      endAddress,
+      const DeepCollectionEquality().hash(_expenses),
       vehicleId,
       startOdometer,
       endOdometer,
@@ -366,6 +440,9 @@ abstract class _Trip extends Trip {
       required final TripCategory category,
       final String? purpose,
       final String? notes,
+      final String? startAddress,
+      final String? endAddress,
+      final List<TripExpense> expenses,
       final String? vehicleId,
       final double? startOdometer,
       final double? endOdometer,
@@ -390,6 +467,16 @@ abstract class _Trip extends Trip {
   String? get purpose;
   @override
   String? get notes;
+  @override
+
+  /// Human-readable start/end addresses (resolved via optional geocoding).
+  String? get startAddress;
+  @override
+  String? get endAddress;
+  @override
+
+  /// Tolls, parking, and other out-of-pocket expenses attached to the trip.
+  List<TripExpense> get expenses;
   @override
   String? get vehicleId;
   @override

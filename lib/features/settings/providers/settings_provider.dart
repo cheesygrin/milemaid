@@ -37,6 +37,10 @@ class Settings extends _$Settings {
     await update(state.copyWith(namedLocations: locations));
   }
 
+  Future<void> setGeocodingEnabled(bool enabled) async {
+    await update(state.copyWith(geocodingEnabled: enabled));
+  }
+
   Future<void> toggleNotifications(bool enabled) async {
     final updated = state.copyWith(notificationsEnabled: enabled);
     await update(updated);

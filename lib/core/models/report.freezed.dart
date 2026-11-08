@@ -28,6 +28,9 @@ mixin _$Report {
   double get deductionAmount => throw _privateConstructorUsedError;
   double get rateUsed => throw _privateConstructorUsedError;
 
+  /// Sum of toll/parking/other expenses across the range, in dollars.
+  double get expenseTotal => throw _privateConstructorUsedError;
+
   @JsonKey(ignore: true)
   $ReportCopyWith<Report> get copyWith => throw _privateConstructorUsedError;
 }
@@ -48,7 +51,8 @@ abstract class $ReportCopyWith<$Res> {
       double otherMiles,
       int totalTrips,
       double deductionAmount,
-      double rateUsed});
+      double rateUsed,
+      double expenseTotal});
 }
 
 /// @nodoc
@@ -75,6 +79,7 @@ class _$ReportCopyWithImpl<$Res, $Val extends Report>
     Object? totalTrips = null,
     Object? deductionAmount = null,
     Object? rateUsed = null,
+    Object? expenseTotal = null,
   }) {
     return _then(_value.copyWith(
       startDate: null == startDate
@@ -121,6 +126,10 @@ class _$ReportCopyWithImpl<$Res, $Val extends Report>
           ? _value.rateUsed
           : rateUsed // ignore: cast_nullable_to_non_nullable
               as double,
+      expenseTotal: null == expenseTotal
+          ? _value.expenseTotal
+          : expenseTotal // ignore: cast_nullable_to_non_nullable
+              as double,
     ) as $Val);
   }
 }
@@ -143,7 +152,8 @@ abstract class _$$ReportImplCopyWith<$Res> implements $ReportCopyWith<$Res> {
       double otherMiles,
       int totalTrips,
       double deductionAmount,
-      double rateUsed});
+      double rateUsed,
+      double expenseTotal});
 }
 
 /// @nodoc
@@ -168,6 +178,7 @@ class __$$ReportImplCopyWithImpl<$Res>
     Object? totalTrips = null,
     Object? deductionAmount = null,
     Object? rateUsed = null,
+    Object? expenseTotal = null,
   }) {
     return _then(_$ReportImpl(
       startDate: null == startDate
@@ -214,6 +225,10 @@ class __$$ReportImplCopyWithImpl<$Res>
           ? _value.rateUsed
           : rateUsed // ignore: cast_nullable_to_non_nullable
               as double,
+      expenseTotal: null == expenseTotal
+          ? _value.expenseTotal
+          : expenseTotal // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -232,7 +247,8 @@ class _$ReportImpl extends _Report {
       required this.otherMiles,
       required this.totalTrips,
       required this.deductionAmount,
-      required this.rateUsed})
+      required this.rateUsed,
+      this.expenseTotal = 0.0})
       : _trips = trips,
         super._();
 
@@ -265,9 +281,14 @@ class _$ReportImpl extends _Report {
   @override
   final double rateUsed;
 
+  /// Sum of toll/parking/other expenses across the range, in dollars.
+  @override
+  @JsonKey()
+  final double expenseTotal;
+
   @override
   String toString() {
-    return 'Report(startDate: $startDate, endDate: $endDate, trips: $trips, totalMiles: $totalMiles, businessMiles: $businessMiles, personalMiles: $personalMiles, commuteMiles: $commuteMiles, otherMiles: $otherMiles, totalTrips: $totalTrips, deductionAmount: $deductionAmount, rateUsed: $rateUsed)';
+    return 'Report(startDate: $startDate, endDate: $endDate, trips: $trips, totalMiles: $totalMiles, businessMiles: $businessMiles, personalMiles: $personalMiles, commuteMiles: $commuteMiles, otherMiles: $otherMiles, totalTrips: $totalTrips, deductionAmount: $deductionAmount, rateUsed: $rateUsed, expenseTotal: $expenseTotal)';
   }
 
   @override
@@ -294,7 +315,9 @@ class _$ReportImpl extends _Report {
             (identical(other.deductionAmount, deductionAmount) ||
                 other.deductionAmount == deductionAmount) &&
             (identical(other.rateUsed, rateUsed) ||
-                other.rateUsed == rateUsed));
+                other.rateUsed == rateUsed) &&
+            (identical(other.expenseTotal, expenseTotal) ||
+                other.expenseTotal == expenseTotal));
   }
 
   @override
@@ -310,7 +333,8 @@ class _$ReportImpl extends _Report {
       otherMiles,
       totalTrips,
       deductionAmount,
-      rateUsed);
+      rateUsed,
+      expenseTotal);
 
   @JsonKey(ignore: true)
   @override
@@ -331,7 +355,8 @@ abstract class _Report extends Report {
       required final double otherMiles,
       required final int totalTrips,
       required final double deductionAmount,
-      required final double rateUsed}) = _$ReportImpl;
+      required final double rateUsed,
+      final double expenseTotal}) = _$ReportImpl;
   const _Report._() : super._();
 
   @override
@@ -356,6 +381,10 @@ abstract class _Report extends Report {
   double get deductionAmount;
   @override
   double get rateUsed;
+  @override
+
+  /// Sum of toll/parking/other expenses across the range, in dollars.
+  double get expenseTotal;
   @override
   @JsonKey(ignore: true)
   _$$ReportImplCopyWith<_$ReportImpl> get copyWith =>

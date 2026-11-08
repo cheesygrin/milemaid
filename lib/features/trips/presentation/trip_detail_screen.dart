@@ -4,10 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/config/app_config.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/core/models/trip_expense.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/shared/widgets/category_chip.dart';
 import 'package:milemaid/shared/widgets/custom_map.dart';
+import 'package:uuid/uuid.dart';
 
 class TripDetailScreen extends ConsumerStatefulWidget {
   final String tripId;
@@ -27,6 +29,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   TripCategory _category = TripCategory.business;
   double? _startOdo;
   double? _endOdo;
+  List<TripExpense> _expenses = [];
 
   @override
   void initState() {
@@ -50,6 +53,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     _notesCtrl.text = _trip.notes ?? '';
     _startOdo = _trip.startOdometer;
     _endOdo = _trip.endOdometer;
+    _expenses = List.from(_trip.expenses);
   }
 
   Future<void> _save() async {
@@ -59,6 +63,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       startOdometer: _startOdo,
       endOdometer: _endOdo,
+      expenses: _expenses,
       isConfirmed: true,
     );
     await ref.read(tripsProvider.notifier).addOrUpdateTrip(updated);
@@ -107,6 +112,64 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       context.pop();
       context.push('/trips/${newTrip.id}');
     }
+  }
+
+  Future<void> _addExpense() async {
+    var type = ExpenseType.toll;
+    final amountCtrl = TextEditingController();
+    final noteCtrl = TextEditingController();
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setModal) => AlertDialog(
+          title: const Text('Add expense'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Wrap(
+                spacing: 8,
+                children: ExpenseType.values.map((t) {
+                  return ChoiceChip(
+                    label: Text(t.displayName),
+                    selected: t == type,
+                    onSelected: (_) => setModal(() => type = t),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: amountCtrl,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Amount', prefixText: '\$'),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: noteCtrl,
+                decoration: const InputDecoration(labelText: 'Note (optional)'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add')),
+          ],
+        ),
+      ),
+    );
+    if (ok != true) return;
+
+    final amount = double.tryParse(amountCtrl.text.trim()) ?? 0.0;
+    if (amount <= 0) return;
+    setState(() {
+      _expenses.add(TripExpense(
+        id: const Uuid().v4(),
+        type: type,
+        amountCents: (amount * 100).round(),
+        note: noteCtrl.text.trim().isEmpty ? null : noteCtrl.text.trim(),
+      ));
+    });
   }
 
   @override
@@ -166,6 +229,64 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Addresses (resolved only when geocoding is enabled)
+          if (!_isEditing && (_trip.startAddress != null || _trip.endAddress != null)) ...[
+            const Text('Addresses', style: TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            if (_trip.startAddress != null)
+              Text('From: ${_trip.startAddress}', style: const TextStyle(color: AppColors.textSecondary)),
+            if (_trip.endAddress != null)
+              Text('To: ${_trip.endAddress}', style: const TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 16),
+          ],
+
+          // Expenses
+          if (!_isEditing) ...[
+            if (_expenses.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Expenses', style: Theme.of(context).textTheme.titleSmall),
+                    Text('\$${_trip.totalExpenses.toStringAsFixed(2)}',
+                        style: const TextStyle(fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+          ] else ...[
+            Text('Expenses', style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            if (_expenses.isEmpty)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 8),
+                child: Text('No expenses. Add tolls or parking.',
+                    style: TextStyle(color: AppColors.textSecondary)),
+              )
+            else
+              ..._expenses.asMap().entries.map((entry) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.receipt_outlined, size: 20),
+                    title: Text(
+                        '${entry.value.type.displayName} — \$${(entry.value.amountCents / 100).toStringAsFixed(2)}'),
+                    subtitle: entry.value.note != null ? Text(entry.value.note!) : null,
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20),
+                      onPressed: () => setState(() => _expenses.removeAt(entry.key)),
+                    ),
+                  )),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _addExpense,
+                icon: const Icon(Icons.add),
+                label: const Text('Add expense'),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
 
           // Category
           Text('Category', style: Theme.of(context).textTheme.titleSmall),

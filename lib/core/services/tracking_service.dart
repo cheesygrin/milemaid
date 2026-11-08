@@ -11,6 +11,7 @@ import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/auto_classifier.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/geocode_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/core/utils/distance_calculator.dart';
@@ -353,11 +354,32 @@ class TrackingService {
 
     await _db.saveTrip(toSave);
 
+    // Optional: resolve start/end addresses in the background (opt-in).
+    if (settings.geocodingEnabled && points.length >= 2) {
+      unawaited(_attachAddresses(toSave, points.first, points.last));
+    }
+
     if (settings.notificationsEnabled) {
       await _showTripEndedNotification(toSave);
     }
 
     debugPrint('TRIP ENDED: ${toSave.formattedDistance} in ${toSave.formattedDuration}');
+  }
+
+  /// Resolves start/end addresses in the background and updates the trip.
+  /// Never throws; a failed lookup simply leaves the address null.
+  Future<void> _attachAddresses(
+      Trip trip, LatLngPoint start, LatLngPoint end) async {
+    final geocode = GeocodeService();
+    final startAddr =
+        await geocode.reverseGeocode(lat: start.latitude, lng: start.longitude);
+    final endAddr =
+        await geocode.reverseGeocode(lat: end.latitude, lng: end.longitude);
+    if (startAddr == null && endAddr == null) return;
+    await _db.updateTrip(trip.copyWith(
+      startAddress: startAddr ?? trip.startAddress,
+      endAddress: endAddr ?? trip.endAddress,
+    ));
   }
 
   void _publishActiveTrip() {

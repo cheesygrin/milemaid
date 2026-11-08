@@ -25,6 +25,10 @@ mixin _$UserSettings {
       throw _privateConstructorUsedError; // High / Balanced / Battery Saver
   bool get notificationsEnabled => throw _privateConstructorUsedError;
   bool get tripEndConfirmation => throw _privateConstructorUsedError;
+
+  /// Resolve start/end addresses from coordinates. Opt-in: it sends
+  /// coordinates to a third-party geocoder (Nominatim).
+  bool get geocodingEnabled => throw _privateConstructorUsedError;
   String get defaultVehicleId => throw _privateConstructorUsedError;
 
   /// Work-hours windows that auto-classify drives as Business.
@@ -64,6 +68,7 @@ abstract class $UserSettingsCopyWith<$Res> {
       String trackingSensitivity,
       bool notificationsEnabled,
       bool tripEndConfirmation,
+      bool geocodingEnabled,
       String defaultVehicleId,
       List<WorkHours> workHours,
       List<NamedLocation> namedLocations,
@@ -92,6 +97,7 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
     Object? trackingSensitivity = null,
     Object? notificationsEnabled = null,
     Object? tripEndConfirmation = null,
+    Object? geocodingEnabled = null,
     Object? defaultVehicleId = null,
     Object? workHours = null,
     Object? namedLocations = null,
@@ -124,6 +130,10 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
       tripEndConfirmation: null == tripEndConfirmation
           ? _value.tripEndConfirmation
           : tripEndConfirmation // ignore: cast_nullable_to_non_nullable
+              as bool,
+      geocodingEnabled: null == geocodingEnabled
+          ? _value.geocodingEnabled
+          : geocodingEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
       defaultVehicleId: null == defaultVehicleId
           ? _value.defaultVehicleId
@@ -172,6 +182,7 @@ abstract class _$$UserSettingsImplCopyWith<$Res>
       String trackingSensitivity,
       bool notificationsEnabled,
       bool tripEndConfirmation,
+      bool geocodingEnabled,
       String defaultVehicleId,
       List<WorkHours> workHours,
       List<NamedLocation> namedLocations,
@@ -198,6 +209,7 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
     Object? trackingSensitivity = null,
     Object? notificationsEnabled = null,
     Object? tripEndConfirmation = null,
+    Object? geocodingEnabled = null,
     Object? defaultVehicleId = null,
     Object? workHours = null,
     Object? namedLocations = null,
@@ -230,6 +242,10 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
       tripEndConfirmation: null == tripEndConfirmation
           ? _value.tripEndConfirmation
           : tripEndConfirmation // ignore: cast_nullable_to_non_nullable
+              as bool,
+      geocodingEnabled: null == geocodingEnabled
+          ? _value.geocodingEnabled
+          : geocodingEnabled // ignore: cast_nullable_to_non_nullable
               as bool,
       defaultVehicleId: null == defaultVehicleId
           ? _value.defaultVehicleId
@@ -273,6 +289,7 @@ class _$UserSettingsImpl extends _UserSettings {
       this.trackingSensitivity = 'Balanced',
       this.notificationsEnabled = true,
       this.tripEndConfirmation = true,
+      this.geocodingEnabled = false,
       this.defaultVehicleId = '',
       final List<WorkHours> workHours = const [],
       final List<NamedLocation> namedLocations = const [],
@@ -305,6 +322,12 @@ class _$UserSettingsImpl extends _UserSettings {
   @override
   @JsonKey()
   final bool tripEndConfirmation;
+
+  /// Resolve start/end addresses from coordinates. Opt-in: it sends
+  /// coordinates to a third-party geocoder (Nominatim).
+  @override
+  @JsonKey()
+  final bool geocodingEnabled;
   @override
   @JsonKey()
   final String defaultVehicleId;
@@ -355,7 +378,7 @@ class _$UserSettingsImpl extends _UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
+    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, geocodingEnabled: $geocodingEnabled, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
   }
 
   @override
@@ -373,6 +396,8 @@ class _$UserSettingsImpl extends _UserSettings {
                 other.notificationsEnabled == notificationsEnabled) &&
             (identical(other.tripEndConfirmation, tripEndConfirmation) ||
                 other.tripEndConfirmation == tripEndConfirmation) &&
+            (identical(other.geocodingEnabled, geocodingEnabled) ||
+                other.geocodingEnabled == geocodingEnabled) &&
             (identical(other.defaultVehicleId, defaultVehicleId) ||
                 other.defaultVehicleId == defaultVehicleId) &&
             const DeepCollectionEquality()
@@ -397,6 +422,7 @@ class _$UserSettingsImpl extends _UserSettings {
       trackingSensitivity,
       notificationsEnabled,
       tripEndConfirmation,
+      geocodingEnabled,
       defaultVehicleId,
       const DeepCollectionEquality().hash(_workHours),
       const DeepCollectionEquality().hash(_namedLocations),
@@ -420,6 +446,7 @@ abstract class _UserSettings extends UserSettings {
       final String trackingSensitivity,
       final bool notificationsEnabled,
       final bool tripEndConfirmation,
+      final bool geocodingEnabled,
       final String defaultVehicleId,
       final List<WorkHours> workHours,
       final List<NamedLocation> namedLocations,
@@ -443,6 +470,11 @@ abstract class _UserSettings extends UserSettings {
   bool get notificationsEnabled;
   @override
   bool get tripEndConfirmation;
+  @override
+
+  /// Resolve start/end addresses from coordinates. Opt-in: it sends
+  /// coordinates to a third-party geocoder (Nominatim).
+  bool get geocodingEnabled;
   @override
   String get defaultVehicleId;
   @override
