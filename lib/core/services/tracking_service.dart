@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/core/services/auto_classifier.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
@@ -330,19 +331,33 @@ class TrackingService {
       distanceMiles: result.distanceMiles!,
       durationMinutes: end.difference(start).inMinutes.clamp(1, 9999),
       routePoints: _thinRoute(points, maxPoints: 120),
-      // Not business until the user says so: an unreviewed drive must never
-      // count toward business miles or the deduction.
+      // Not business until classified (by the user or an auto-classify rule).
       category: TripCategory.other,
       isConfirmed: false,
     );
 
-    await _db.saveTrip(trip);
+    // Auto-classify from Work Hours / Named Locations before the drive hits
+    // the review queue (MileIQ-style). A match marks it confirmed so its miles
+    // count immediately, but the trip stays editable in trip detail.
+    final settings = _db.getSettings();
+    final autoCat = AutoClassifier().classify(
+      startTime: start,
+      startLat: points.isEmpty ? 0.0 : points.first.latitude,
+      startLng: points.isEmpty ? 0.0 : points.first.longitude,
+      workHours: settings.workHours,
+      namedLocations: settings.namedLocations,
+    );
+    final toSave = autoCat != null
+        ? trip.copyWith(category: autoCat, isConfirmed: true)
+        : trip;
 
-    if (_db.getSettings().notificationsEnabled) {
-      await _showTripEndedNotification(trip);
+    await _db.saveTrip(toSave);
+
+    if (settings.notificationsEnabled) {
+      await _showTripEndedNotification(toSave);
     }
 
-    debugPrint('TRIP ENDED: ${trip.formattedDistance} in ${trip.formattedDuration}');
+    debugPrint('TRIP ENDED: ${toSave.formattedDistance} in ${toSave.formattedDuration}');
   }
 
   void _publishActiveTrip() {

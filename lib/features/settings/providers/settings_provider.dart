@@ -1,5 +1,7 @@
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/user_settings.dart';
 import 'package:milemaid/core/models/vehicle.dart';
+import 'package:milemaid/core/models/work_hours.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -25,6 +27,14 @@ class Settings extends _$Settings {
   Future<void> setSensitivity(String sensitivity) async {
     final updated = state.copyWith(trackingSensitivity: sensitivity);
     await update(updated);
+  }
+
+  Future<void> setWorkHours(List<WorkHours> workHours) async {
+    await update(state.copyWith(workHours: workHours));
+  }
+
+  Future<void> setNamedLocations(List<NamedLocation> locations) async {
+    await update(state.copyWith(namedLocations: locations));
   }
 
   Future<void> toggleNotifications(bool enabled) async {

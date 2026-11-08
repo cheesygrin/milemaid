@@ -31,7 +31,11 @@ class TripCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            ?header,
+            // NOTE: keep the if-form (not the Dart 3.8 `?header` null-aware
+            // element) because build_runner pins analyzer 6.4.x, which can't
+            // parse null-aware elements and fails codegen on this file.
+            // ignore: use_null_aware_elements
+            if (header != null) header!,
             Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

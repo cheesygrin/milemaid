@@ -140,6 +140,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             subtitle: Text(settings.trackingSensitivity),
             onTap: () => _chooseSensitivity(context, ref, settings),
           ),
+          ListTile(
+            leading: const Icon(Icons.auto_awesome),
+            title: const Text('Auto-classification'),
+            subtitle: const Text('Work hours and named locations'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/auto-classify'),
+          ),
 
           const _SectionHeader('Privacy & Data'),
           // Demo data is a development aid only; hidden in release builds.

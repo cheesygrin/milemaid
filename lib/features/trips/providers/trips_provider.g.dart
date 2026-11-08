@@ -172,7 +172,7 @@ class _FilteredTripsProviderElement
   String get query => (origin as FilteredTripsProvider).query;
 }
 
-String _$tripsHash() => r'0b28650c3133bb73cb7e8c31f8210908e679e049';
+String _$tripsHash() => r'f2e63681db4b7351490ba6063bddf1b9b58961cc';
 
 /// See also [Trips].
 @ProviderFor(Trips)

@@ -18,12 +18,20 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$UserSettings {
   String get name => throw _privateConstructorUsedError;
   String get email => throw _privateConstructorUsedError;
-  double get mileageRate => throw _privateConstructorUsedError; // IRS default
+
+  /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
+  double get mileageRate => throw _privateConstructorUsedError;
   String get trackingSensitivity =>
       throw _privateConstructorUsedError; // High / Balanced / Battery Saver
   bool get notificationsEnabled => throw _privateConstructorUsedError;
   bool get tripEndConfirmation => throw _privateConstructorUsedError;
   String get defaultVehicleId => throw _privateConstructorUsedError;
+
+  /// Work-hours windows that auto-classify drives as Business.
+  List<WorkHours> get workHours => throw _privateConstructorUsedError;
+
+  /// Saved places that auto-classify drives starting near them as Business.
+  List<NamedLocation> get namedLocations => throw _privateConstructorUsedError;
 
   /// Onboarding completed flag
   bool get hasCompletedOnboarding => throw _privateConstructorUsedError;
@@ -57,6 +65,8 @@ abstract class $UserSettingsCopyWith<$Res> {
       bool notificationsEnabled,
       bool tripEndConfirmation,
       String defaultVehicleId,
+      List<WorkHours> workHours,
+      List<NamedLocation> namedLocations,
       bool hasCompletedOnboarding,
       DateTime? lastUpdated,
       bool isPro,
@@ -83,6 +93,8 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
     Object? notificationsEnabled = null,
     Object? tripEndConfirmation = null,
     Object? defaultVehicleId = null,
+    Object? workHours = null,
+    Object? namedLocations = null,
     Object? hasCompletedOnboarding = null,
     Object? lastUpdated = freezed,
     Object? isPro = null,
@@ -117,6 +129,14 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
           ? _value.defaultVehicleId
           : defaultVehicleId // ignore: cast_nullable_to_non_nullable
               as String,
+      workHours: null == workHours
+          ? _value.workHours
+          : workHours // ignore: cast_nullable_to_non_nullable
+              as List<WorkHours>,
+      namedLocations: null == namedLocations
+          ? _value.namedLocations
+          : namedLocations // ignore: cast_nullable_to_non_nullable
+              as List<NamedLocation>,
       hasCompletedOnboarding: null == hasCompletedOnboarding
           ? _value.hasCompletedOnboarding
           : hasCompletedOnboarding // ignore: cast_nullable_to_non_nullable
@@ -153,6 +173,8 @@ abstract class _$$UserSettingsImplCopyWith<$Res>
       bool notificationsEnabled,
       bool tripEndConfirmation,
       String defaultVehicleId,
+      List<WorkHours> workHours,
+      List<NamedLocation> namedLocations,
       bool hasCompletedOnboarding,
       DateTime? lastUpdated,
       bool isPro,
@@ -177,6 +199,8 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
     Object? notificationsEnabled = null,
     Object? tripEndConfirmation = null,
     Object? defaultVehicleId = null,
+    Object? workHours = null,
+    Object? namedLocations = null,
     Object? hasCompletedOnboarding = null,
     Object? lastUpdated = freezed,
     Object? isPro = null,
@@ -211,6 +235,14 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
           ? _value.defaultVehicleId
           : defaultVehicleId // ignore: cast_nullable_to_non_nullable
               as String,
+      workHours: null == workHours
+          ? _value._workHours
+          : workHours // ignore: cast_nullable_to_non_nullable
+              as List<WorkHours>,
+      namedLocations: null == namedLocations
+          ? _value._namedLocations
+          : namedLocations // ignore: cast_nullable_to_non_nullable
+              as List<NamedLocation>,
       hasCompletedOnboarding: null == hasCompletedOnboarding
           ? _value.hasCompletedOnboarding
           : hasCompletedOnboarding // ignore: cast_nullable_to_non_nullable
@@ -242,11 +274,15 @@ class _$UserSettingsImpl extends _UserSettings {
       this.notificationsEnabled = true,
       this.tripEndConfirmation = true,
       this.defaultVehicleId = '',
+      final List<WorkHours> workHours = const [],
+      final List<NamedLocation> namedLocations = const [],
       this.hasCompletedOnboarding = false,
       this.lastUpdated,
       this.isPro = false,
       this.themeMode = 'system'})
-      : super._();
+      : _workHours = workHours,
+        _namedLocations = namedLocations,
+        super._();
 
   @override
   @JsonKey()
@@ -254,10 +290,11 @@ class _$UserSettingsImpl extends _UserSettings {
   @override
   @JsonKey()
   final String email;
+
+  /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
   @override
   @JsonKey()
   final double mileageRate;
-// IRS default
   @override
   @JsonKey()
   final String trackingSensitivity;
@@ -271,6 +308,30 @@ class _$UserSettingsImpl extends _UserSettings {
   @override
   @JsonKey()
   final String defaultVehicleId;
+
+  /// Work-hours windows that auto-classify drives as Business.
+  final List<WorkHours> _workHours;
+
+  /// Work-hours windows that auto-classify drives as Business.
+  @override
+  @JsonKey()
+  List<WorkHours> get workHours {
+    if (_workHours is EqualUnmodifiableListView) return _workHours;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_workHours);
+  }
+
+  /// Saved places that auto-classify drives starting near them as Business.
+  final List<NamedLocation> _namedLocations;
+
+  /// Saved places that auto-classify drives starting near them as Business.
+  @override
+  @JsonKey()
+  List<NamedLocation> get namedLocations {
+    if (_namedLocations is EqualUnmodifiableListView) return _namedLocations;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_namedLocations);
+  }
 
   /// Onboarding completed flag
   @override
@@ -294,7 +355,7 @@ class _$UserSettingsImpl extends _UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, defaultVehicleId: $defaultVehicleId, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
+    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
   }
 
   @override
@@ -314,6 +375,10 @@ class _$UserSettingsImpl extends _UserSettings {
                 other.tripEndConfirmation == tripEndConfirmation) &&
             (identical(other.defaultVehicleId, defaultVehicleId) ||
                 other.defaultVehicleId == defaultVehicleId) &&
+            const DeepCollectionEquality()
+                .equals(other._workHours, _workHours) &&
+            const DeepCollectionEquality()
+                .equals(other._namedLocations, _namedLocations) &&
             (identical(other.hasCompletedOnboarding, hasCompletedOnboarding) ||
                 other.hasCompletedOnboarding == hasCompletedOnboarding) &&
             (identical(other.lastUpdated, lastUpdated) ||
@@ -333,6 +398,8 @@ class _$UserSettingsImpl extends _UserSettings {
       notificationsEnabled,
       tripEndConfirmation,
       defaultVehicleId,
+      const DeepCollectionEquality().hash(_workHours),
+      const DeepCollectionEquality().hash(_namedLocations),
       hasCompletedOnboarding,
       lastUpdated,
       isPro,
@@ -354,6 +421,8 @@ abstract class _UserSettings extends UserSettings {
       final bool notificationsEnabled,
       final bool tripEndConfirmation,
       final String defaultVehicleId,
+      final List<WorkHours> workHours,
+      final List<NamedLocation> namedLocations,
       final bool hasCompletedOnboarding,
       final DateTime? lastUpdated,
       final bool isPro,
@@ -365,8 +434,10 @@ abstract class _UserSettings extends UserSettings {
   @override
   String get email;
   @override
+
+  /// Dollars per mile. 0 means "use the IRS standard rate for each trip's date".
   double get mileageRate;
-  @override // IRS default
+  @override
   String get trackingSensitivity;
   @override // High / Balanced / Battery Saver
   bool get notificationsEnabled;
@@ -374,6 +445,14 @@ abstract class _UserSettings extends UserSettings {
   bool get tripEndConfirmation;
   @override
   String get defaultVehicleId;
+  @override
+
+  /// Work-hours windows that auto-classify drives as Business.
+  List<WorkHours> get workHours;
+  @override
+
+  /// Saved places that auto-classify drives starting near them as Business.
+  List<NamedLocation> get namedLocations;
   @override
 
   /// Onboarding completed flag

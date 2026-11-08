@@ -10,6 +10,7 @@ import 'package:milemaid/features/monetization/presentation/paywall_screen.dart'
 import 'package:milemaid/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:milemaid/features/reports/presentation/pdf_preview_screen.dart';
 import 'package:milemaid/features/reports/presentation/reports_screen.dart';
+import 'package:milemaid/features/settings/presentation/auto_classify_screen.dart';
 import 'package:milemaid/features/settings/presentation/settings_screen.dart';
 import 'package:milemaid/features/settings/presentation/vehicles_screen.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
@@ -62,6 +63,10 @@ final _router = GoRouter(
         GoRoute(
           path: 'vehicles',
           builder: (context, state) => const VehiclesScreen(),
+        ),
+        GoRoute(
+          path: 'auto-classify',
+          builder: (context, state) => const AutoClassifyScreen(),
         ),
       ],
     ),

@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:milemaid/core/constants/irs_rates.dart';
+import 'package:milemaid/core/models/named_location.dart';
+import 'package:milemaid/core/models/work_hours.dart';
 
 part 'user_settings.freezed.dart';
 
@@ -17,6 +19,10 @@ class UserSettings with _$UserSettings {
     @Default(true) bool notificationsEnabled,
     @Default(true) bool tripEndConfirmation,
     @Default('') String defaultVehicleId,
+    /// Work-hours windows that auto-classify drives as Business.
+    @Default([]) List<WorkHours> workHours,
+    /// Saved places that auto-classify drives starting near them as Business.
+    @Default([]) List<NamedLocation> namedLocations,
     /// Onboarding completed flag
     @Default(false) bool hasCompletedOnboarding,
     /// Last time we synced or updated (for future)
@@ -39,6 +45,12 @@ class UserSettings with _$UserSettings {
         notificationsEnabled: json['notificationsEnabled'] as bool? ?? true,
         tripEndConfirmation: json['tripEndConfirmation'] as bool? ?? true,
         defaultVehicleId: json['defaultVehicleId'] as String? ?? '',
+        workHours: (json['workHours'] as List<dynamic>? ?? [])
+            .map((e) => WorkHours.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        namedLocations: (json['namedLocations'] as List<dynamic>? ?? [])
+            .map((e) => NamedLocation.fromJson(e as Map<String, dynamic>))
+            .toList(),
         hasCompletedOnboarding: json['hasCompletedOnboarding'] as bool? ?? false,
         lastUpdated: json['lastUpdated'] != null ? DateTime.parse(json['lastUpdated'] as String) : null,
         isPro: json['isPro'] as bool? ?? false,
@@ -53,6 +65,8 @@ class UserSettings with _$UserSettings {
         'notificationsEnabled': notificationsEnabled,
         'tripEndConfirmation': tripEndConfirmation,
         'defaultVehicleId': defaultVehicleId,
+        'workHours': workHours.map((e) => e.toJson()).toList(),
+        'namedLocations': namedLocations.map((e) => e.toJson()).toList(),
         'hasCompletedOnboarding': hasCompletedOnboarding,
         'lastUpdated': lastUpdated?.toIso8601String(),
         'isPro': isPro,
