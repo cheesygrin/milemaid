@@ -10,6 +10,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/auto_classifier.dart';
+import 'package:milemaid/core/services/backup_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/place_matcher.dart';
@@ -365,6 +366,10 @@ class TrackingService {
     if (settings.notificationsEnabled) {
       await _showTripEndedNotification(toSave);
     }
+
+    // Fire-and-forget Drive backup (rate-limited internally, errors recorded
+    // in backup state). Must never block or fail trip saving.
+    unawaited(BackupService.instance.autoBackup(afterNewTrip: true));
 
     debugPrint('TRIP ENDED: ${toSave.formattedDistance} in ${toSave.formattedDuration}');
   }
