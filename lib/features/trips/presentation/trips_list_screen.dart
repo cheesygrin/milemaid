@@ -19,9 +19,10 @@ Map<String, NamedLocation> get _placesById =>
     locationsById(DatabaseService().getAllLocations());
 
 class TripsListScreen extends ConsumerStatefulWidget {
-  const TripsListScreen({super.key, this.reviewOnly = false});
+  const TripsListScreen({super.key, this.reviewOnly = false, this.initialCategory});
 
   final bool reviewOnly;
+  final TripCategory? initialCategory;
 
   @override
   ConsumerState<TripsListScreen> createState() => _TripsListScreenState();
@@ -36,6 +37,7 @@ class _TripsListScreenState extends ConsumerState<TripsListScreen> {
   void initState() {
     super.initState();
     _reviewOnly = widget.reviewOnly;
+    _categoryFilter = widget.initialCategory;
   }
 
   List<Trip> _filteredTrips(List<Trip> all) {

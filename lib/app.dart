@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
@@ -36,9 +37,17 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/trips',
-      builder: (context, state) => TripsListScreen(
-        reviewOnly: state.uri.queryParameters['review'] == '1',
-      ),
+      builder: (context, state) {
+        final q = state.uri.queryParameters['category'];
+        TripCategory? cat;
+        for (final c in TripCategory.values) {
+          if (c.name == q) cat = c;
+        }
+        return TripsListScreen(
+          reviewOnly: state.uri.queryParameters['review'] == '1',
+          initialCategory: cat,
+        );
+      },
       routes: [
         GoRoute(
           path: ':id',

@@ -145,6 +145,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           title: AppStrings.totalMiles,
                           value: dash.totalMiles.toStringAsFixed(1),
                           subtitle: 'all time',
+                          onTap: () => context.push('/trips'),
                         ),
                       ),
                       Expanded(
@@ -152,6 +153,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                           title: AppStrings.personalMiles,
                           value: dash.personalMiles.toStringAsFixed(1),
                           accentColor: AppColors.personal,
+                          onTap: () => context.push('/trips?category=personal'),
                         ),
                       ),
                       Expanded(
