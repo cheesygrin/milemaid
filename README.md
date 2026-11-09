@@ -136,6 +136,38 @@ The Android package and iOS bundle identifier are set to `com.timrose.milemaid`.
 
 See commit history for the original detailed blueprint and architecture decisions.
 
+### Google Drive backup setup
+
+MileMaid can automatically back up its local data to a "MileMaid Backups"
+folder in your own Google Drive (drive.file scope only — the app can only see
+files it created). Backups only work in builds compiled with an OAuth client
+ID; otherwise Settings shows "Google Drive backup isn't set up in this build."
+
+1. Create a project at [Google Cloud Console](https://console.cloud.google.com/)
+   and enable the **Google Drive API**.
+2. Configure the **OAuth consent screen** and click **Publish**. Apps left in
+   *Testing* mode lose sign-in after 7 days (refresh tokens are revoked).
+3. Create an **iOS OAuth client** for the app's bundle id
+   (`com.timrose.milemaid` by default).
+4. Copy `ios/Flutter/Secrets.example.xcconfig` to `ios/Flutter/Secrets.xcconfig`
+   (gitignored) and fill in the client ID and its reversed form:
+   ```
+   GOOGLE_IOS_CLIENT_ID = 1234567890-abcdef.apps.googleusercontent.com
+   GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.1234567890-abcdef
+   ```
+5. Copy `config/secrets.example.json` to `config/secrets.json` (gitignored)
+   and set `"GOOGLE_IOS_CLIENT_ID"` to the same client ID.
+6. Build and run with the defines:
+   ```
+   flutter run --dart-define-from-file=config/secrets.json
+   ```
+
+In Settings → Backup, connect your Google account, and MileMaid will back up
+at most once per day (or ~10 minutes after a new drive) to a single JSON file
+per day. "Restore from Drive" merges in drives that are missing on this phone
+and never changes or deletes anything local. No client IDs, tokens, or backup
+data are committed to this repository.
+
 ## Roadmap
 
 - In-app subscriptions (Pro / Premium)
