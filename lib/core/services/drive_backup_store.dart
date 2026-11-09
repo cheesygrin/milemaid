@@ -39,7 +39,9 @@ class DriveBackupStore implements BackupStore {
   Future<String> _ensureFolderId() async {
     final existing = await _findFolderId();
     if (existing != null) return existing;
-    final created = await _api.files.create(drive.File(name: kBackupFolderName));
+    final created = await _api.files.create(
+      drive.File(name: kBackupFolderName, mimeType: _folderMimeType),
+    );
     return created.id!;
   }
 
@@ -109,19 +111,39 @@ class DriveBackupStore implements BackupStore {
   }
 }
 
-/// Sign-in + authorization for Drive backups on top of google_sign_in 7.x.
+/// Sign-in + authorization for Drive backups, as an interface so BackupService
+/// (and the tests) can depend on an abstraction — fakes need no network and
+/// no client ID.
+abstract class DriveAuth {
+  /// Email of the last successfully connected/silently signed-in account.
+  /// Not a credential, just a display string for Settings.
+  String? get lastAccountEmail;
+
+  /// Interactive sign-in: authenticate, then authorize the Drive scope.
+  /// Returns the account email.
+  Future<String> connect();
+
+  /// Silent (no UI) attempt to get a Drive-authorized client. Returns null
+  /// when the user is not signed in or has not granted the scope — Settings
+  /// then shows "Reconnect needed".
+  Future<gapis.AuthClient?> silentClient();
+
+  /// Revokes authorization and signs out.
+  Future<void> disconnect();
+}
+
+/// The real [DriveAuth] on top of google_sign_in 7.x.
 ///
 /// Tokens are never logged or stored anywhere — they live only inside the
 /// plugin and the short-lived AuthClient returned here.
-class GoogleDriveAuth {
+class GoogleDriveAuth implements DriveAuth {
   static final GoogleDriveAuth instance = GoogleDriveAuth._internal();
 
   GoogleDriveAuth._internal();
 
   bool _initialized = false;
 
-  /// Email of the last successfully connected/silently signed-in account.
-  /// Not a credential, just a display string for Settings.
+  @override
   String? lastAccountEmail;
 
   Future<void> _ensureInitialized() async {
@@ -136,6 +158,7 @@ class GoogleDriveAuth {
 
   /// Interactive sign-in: authenticate, then authorize the Drive scope.
   /// Returns the account email.
+  @override
   Future<String> connect() async {
     await _ensureInitialized();
     final account = await GoogleSignIn.instance.authenticate(
@@ -150,6 +173,7 @@ class GoogleDriveAuth {
   /// Silent (no UI) attempt to get a Drive-authorized client. Returns null
   /// when the user is not signed in or has not granted the scope — Settings
   /// then shows "Reconnect needed".
+  @override
   Future<gapis.AuthClient?> silentClient() async {
     if (!driveBackupConfigured) return null; // never touches the plugin
     await _ensureInitialized();
@@ -164,6 +188,7 @@ class GoogleDriveAuth {
   }
 
   /// Revokes authorization and signs out.
+  @override
   Future<void> disconnect() async {
     if (!driveBackupConfigured) return; // never touches the plugin
     await _ensureInitialized();
