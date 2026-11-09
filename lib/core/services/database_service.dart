@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:milemaid/core/models/backup_state.dart';
 import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/purpose_preset.dart';
 import 'package:milemaid/core/models/trip.dart';
@@ -175,6 +176,28 @@ class DatabaseService {
     await _purposes.delete(id);
     onTripsChanged?.call();
   }
+
+  // BACKUP STATE
+  // Stored under a dedicated key in the settings box (NOT freezed
+  // UserSettings): lastSuccessAt/lastAttemptAt/lastError/accountEmail/
+  // needsReconnect as JSON.
+  static const String _backupStateKey = 'backup_state';
+
+  BackupState getBackupState() {
+    final raw = _settings.get(_backupStateKey);
+    if (raw == null) return BackupState();
+    return BackupState.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+  }
+
+  Future<void> saveBackupState(BackupState state) =>
+      _settings.put(_backupStateKey, jsonEncode(state.toJson()));
+
+  // MERGE LOOKUPS (used by BackupService.mergeSnapshot; add-only, never
+  // overwrite).
+  bool hasTrip(String id) => _trips.containsKey(id);
+  bool hasVehicle(String id) => _vehicles.containsKey(id);
+  bool hasLocation(String id) => _locations.containsKey(id);
+  bool hasPurpose(String id) => _purposes.containsKey(id);
 
   // PRIVACY
   Future<void> clearAllData() async {

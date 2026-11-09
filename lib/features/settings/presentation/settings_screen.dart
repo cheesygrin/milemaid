@@ -14,6 +14,7 @@ import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/sample_data_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
+import 'package:milemaid/features/settings/presentation/backup_section.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -199,6 +200,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             title: const Text(AppStrings.deleteAllData, style: TextStyle(color: Colors.red)),
             onTap: () => _confirmDeleteAll(context, ref),
           ),
+
+          BackupSection(),
 
           const _SectionHeader('Legal & Privacy'),
           ListTile(

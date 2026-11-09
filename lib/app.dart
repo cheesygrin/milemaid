@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/core/services/backup_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
@@ -218,6 +221,8 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _resumeTrackingIfNeeded();
+      // Rate-limited inside the service; failures recorded, never thrown.
+      unawaited(BackupService.instance.autoBackup(afterNewTrip: false));
       // Close a drive that ended while the app wasn't getting GPS fixes.
       TrackingService().checkForEndedTrip();
       // Fill in missing addresses in the background (one pass at a time).
