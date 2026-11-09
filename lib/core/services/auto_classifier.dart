@@ -21,7 +21,9 @@ class AutoClassifier {
       if (wh.covers(startTime)) return TripCategory.business;
     }
     for (final loc in namedLocations) {
-      if (_within(startLat, startLng, loc)) return loc.category;
+      if (loc.defaultCategory != null && _within(startLat, startLng, loc)) {
+        return loc.defaultCategory;
+      }
     }
     return null;
   }
@@ -29,9 +31,9 @@ class AutoClassifier {
   /// Approximate haversine-lite distance check (flat-earth over short ranges),
   /// good enough for a 100 m radius without a full geodesic computation.
   static bool _within(double lat, double lng, NamedLocation loc) {
-    final dLat = (lat - loc.lat) * 111320.0;
+    final dLat = (lat - loc.latitude) * 111320.0;
     final dLng =
-        (lng - loc.lng) * 111320.0 * cos(loc.lat * pi / 180.0);
+        (lng - loc.longitude) * 111320.0 * cos(loc.latitude * pi / 180.0);
     return sqrt(dLat * dLat + dLng * dLng) <= loc.radiusMeters;
   }
 }

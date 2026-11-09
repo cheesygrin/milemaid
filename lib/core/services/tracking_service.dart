@@ -11,8 +11,9 @@ import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/auto_classifier.dart';
 import 'package:milemaid/core/services/database_service.dart';
-import 'package:milemaid/core/services/geocode_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/core/utils/distance_calculator.dart';
 import 'package:milemaid/core/utils/trip_detector.dart';
@@ -325,7 +326,7 @@ class TrackingService {
     final points =
         result.route.map((p) => LatLngPoint.fromLatLng(p)).toList();
 
-    final trip = Trip(
+    var trip = Trip(
       id: const Uuid().v4(),
       startTime: start,
       endTime: end,
@@ -338,8 +339,9 @@ class TrackingService {
     );
 
     // Auto-classify from Work Hours / Named Locations before the drive hits
-    // the review queue (MileIQ-style). A match marks it confirmed so its miles
-    // count immediately, but the trip stays editable in trip detail.
+    // the review queue (MileIQ-style), then enrich place ids / addresses while
+    // the geocoder opt-in is on. A 6 s timeout means a slow geocoder never
+    // loses a drive.
     final settings = _db.getSettings();
     final autoCat = AutoClassifier().classify(
       startTime: start,
@@ -348,38 +350,23 @@ class TrackingService {
       workHours: settings.workHours,
       namedLocations: settings.namedLocations,
     );
-    final toSave = autoCat != null
+    var toSave = autoCat != null
         ? trip.copyWith(category: autoCat, isConfirmed: true)
         : trip;
 
-    await _db.saveTrip(toSave);
-
-    // Optional: resolve start/end addresses in the background (opt-in).
     if (settings.geocodingEnabled && points.length >= 2) {
-      unawaited(_attachAddresses(toSave, points.first, points.last));
+      toSave = await TripEnricher.instance
+          .enrich(toSave)
+          .timeout(const Duration(seconds: 6), onTimeout: () => toSave);
     }
+
+    await _db.saveTrip(toSave);
 
     if (settings.notificationsEnabled) {
       await _showTripEndedNotification(toSave);
     }
 
     debugPrint('TRIP ENDED: ${toSave.formattedDistance} in ${toSave.formattedDuration}');
-  }
-
-  /// Resolves start/end addresses in the background and updates the trip.
-  /// Never throws; a failed lookup simply leaves the address null.
-  Future<void> _attachAddresses(
-      Trip trip, LatLngPoint start, LatLngPoint end) async {
-    final geocode = GeocodeService();
-    final startAddr =
-        await geocode.reverseGeocode(lat: start.latitude, lng: start.longitude);
-    final endAddr =
-        await geocode.reverseGeocode(lat: end.latitude, lng: end.longitude);
-    if (startAddr == null && endAddr == null) return;
-    await _db.updateTrip(trip.copyWith(
-      startAddress: startAddr ?? trip.startAddress,
-      endAddress: endAddr ?? trip.endAddress,
-    ));
   }
 
   void _publishActiveTrip() {
@@ -418,8 +405,20 @@ class TrackingService {
 
   Future<void> _showTripEndedNotification(Trip trip) async {
     final title = AppStrings.tripEndedNotificationTitle;
-    final body = AppStrings.tripEndedNotificationBody
-        .replaceFirst('%s', trip.distanceMiles.toStringAsFixed(1));
+    String body;
+    final endLabel = placeLabel(
+      trip.endLocationId,
+      trip.endAddress,
+      {
+        for (final place in _db.getSettings().namedLocations) place.id: place,
+      },
+    );
+    if (trip.endLocationId != null) {
+      body = '${trip.distanceMiles.toStringAsFixed(1)} mi drive to $endLabel. Tap to classify.';
+    } else {
+      body = AppStrings.tripEndedNotificationBody
+          .replaceFirst('%s', trip.distanceMiles.toStringAsFixed(1));
+    }
 
     const androidDetails = AndroidNotificationDetails(
       'milemaid_trips',

@@ -90,6 +90,8 @@ class Trip with _$Trip {
     double? startOdometer,
     double? endOdometer,
     @Default(false) bool isConfirmed,
+    String? startLocationId,
+    String? endLocationId,
   }) = _Trip;
 
   // Manual JSON (freezed json disabled to avoid generator conflicts with our Hive JSON storage)
@@ -117,6 +119,10 @@ class Trip with _$Trip {
       startOdometer: (json['startOdometer'] as num?)?.toDouble(),
       endOdometer: (json['endOdometer'] as num?)?.toDouble(),
       isConfirmed: json['isConfirmed'] as bool? ?? false,
+      // Optional enrichment fields: missing keys -> null so old stored trips
+      // (pre-addresses) still load unchanged.
+      startLocationId: json['startLocationId'] as String?,
+      endLocationId: json['endLocationId'] as String?,
     );
   }
 
@@ -139,6 +145,8 @@ class Trip with _$Trip {
         'startOdometer': startOdometer,
         'endOdometer': endOdometer,
         'isConfirmed': isConfirmed,
+        'startLocationId': startLocationId,
+        'endLocationId': endLocationId,
       };
 
   /// Convenience: convert stored points back to Google Maps LatLng list.

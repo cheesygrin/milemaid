@@ -45,7 +45,13 @@ void main() {
   });
 
   test('NamedLocation round-trips its auto-classify category', () {
-    const loc = NamedLocation(id: 'l1', name: 'Home', lat: 0, lng: 0, category: TripCategory.commute);
-    expect(NamedLocation.fromJson(loc.toJson()).category, TripCategory.commute);
+    final loc = NamedLocation(
+        id: 'l1',
+        name: 'Home',
+        latitude: 0,
+        longitude: 0,
+        defaultCategory: TripCategory.commute,
+        createdAt: DateTime(2026, 1, 1));
+    expect(NamedLocation.fromJson(loc.toJson()).defaultCategory, TripCategory.commute);
   });
 }

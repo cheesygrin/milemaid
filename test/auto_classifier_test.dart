@@ -69,9 +69,11 @@ void main() {
     final office = NamedLocation(
       id: 'loc',
       name: 'Office',
-      lat: 37.7749,
-      lng: -122.4194,
+      latitude: 37.7749,
+      longitude: -122.4194,
       radiusMeters: 100,
+      defaultCategory: TripCategory.business,
+      createdAt: DateTime(2026, 1, 1),
     );
 
     test('classifies business at a saved location', () {

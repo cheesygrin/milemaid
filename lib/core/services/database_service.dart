@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:milemaid/core/models/named_location.dart';
+import 'package:milemaid/core/models/purpose_preset.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/vehicle.dart';
 import 'package:milemaid/core/models/user_settings.dart';
@@ -16,10 +18,14 @@ class DatabaseService {
   static const String _tripsBox = 'trips_json';
   static const String _vehiclesBox = 'vehicles_json';
   static const String _settingsBox = 'settings_json';
+  static const String _locationsBox = 'locations_json';
+  static const String _purposesBox = 'purposes_json';
 
   late Box<String> _trips;
   late Box<String> _vehicles;
   late Box<String> _settings;
+  late Box<String> _locations;
+  late Box<String> _purposes;
 
   bool _initialized = false;
 
@@ -32,6 +38,8 @@ class DatabaseService {
     _trips = await Hive.openBox<String>(_tripsBox);
     _vehicles = await Hive.openBox<String>(_vehiclesBox);
     _settings = await Hive.openBox<String>(_settingsBox);
+    _locations = await Hive.openBox<String>(_locationsBox);
+    _purposes = await Hive.openBox<String>(_purposesBox);
 
     _initialized = true;
     await _seedDefaultsIfNeeded();
@@ -50,6 +58,23 @@ class DatabaseService {
     }
     if (_settings.isEmpty) {
       await _settings.put('main', jsonEncode(const UserSettings().toJson()));
+    }
+    if (_purposes.isEmpty) {
+      await _seedDefaultPurposes();
+    }
+  }
+
+  /// Generic starter purposes; Tim adds his own on the phone. Seeded only
+  /// when the box is empty.
+  Future<void> _seedDefaultPurposes() async {
+    final defaults = <PurposePreset>[
+      PurposePreset(id: const Uuid().v4(), name: 'Client visit', category: TripCategory.business, sortOrder: 0),
+      PurposePreset(id: const Uuid().v4(), name: 'Supplies run', category: TripCategory.business, sortOrder: 1),
+      PurposePreset(id: const Uuid().v4(), name: 'Meeting', category: TripCategory.business, sortOrder: 2),
+      PurposePreset(id: const Uuid().v4(), name: 'Errand', category: TripCategory.personal, sortOrder: 3),
+    ];
+    for (final p in defaults) {
+      await _purposes.put(p.id, jsonEncode(p.toJson()));
     }
   }
 
@@ -114,11 +139,50 @@ class DatabaseService {
     return updated;
   }
 
+  // NAMED LOCATIONS
+  List<NamedLocation> getAllLocations() {
+    return _locations.values
+        .map((s) => NamedLocation.fromJson(jsonDecode(s) as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<NamedLocation> saveLocation(NamedLocation place) async {
+    await _locations.put(place.id, jsonEncode(place.toJson()));
+    onTripsChanged?.call();
+    return place;
+  }
+
+  Future<void> deleteLocation(String id) async {
+    await _locations.delete(id);
+    onTripsChanged?.call();
+  }
+
+  // PURPOSE PRESETS
+  List<PurposePreset> getAllPurposes() {
+    return _purposes.values
+        .map((s) => PurposePreset.fromJson(jsonDecode(s) as Map<String, dynamic>))
+        .toList()
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+  }
+
+  Future<PurposePreset> savePurpose(PurposePreset preset) async {
+    await _purposes.put(preset.id, jsonEncode(preset.toJson()));
+    onTripsChanged?.call();
+    return preset;
+  }
+
+  Future<void> deletePurpose(String id) async {
+    await _purposes.delete(id);
+    onTripsChanged?.call();
+  }
+
   // PRIVACY
   Future<void> clearAllData() async {
     await _trips.clear();
     await _vehicles.clear();
     await _settings.clear();
+    await _locations.clear();
+    await _purposes.clear();
     await _seedDefaultsIfNeeded();
   }
 
@@ -129,6 +193,8 @@ class DatabaseService {
       'version': '1.0.0',
       'trips': getAllTrips().map((t) => t.toJson()).toList(),
       'vehicles': getAllVehicles().map((v) => v.toJson()).toList(),
+      'locations': getAllLocations().map((l) => l.toJson()).toList(),
+      'purposes': getAllPurposes().map((p) => p.toJson()).toList(),
       'settings': getSettings().toJson(),
     };
   }

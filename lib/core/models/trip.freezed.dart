@@ -42,6 +42,8 @@ mixin _$Trip {
   double? get startOdometer => throw _privateConstructorUsedError;
   double? get endOdometer => throw _privateConstructorUsedError;
   bool get isConfirmed => throw _privateConstructorUsedError;
+  String? get startLocationId => throw _privateConstructorUsedError;
+  String? get endLocationId => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $TripCopyWith<Trip> get copyWith => throw _privateConstructorUsedError;
@@ -70,7 +72,9 @@ abstract class $TripCopyWith<$Res> {
       String? vehicleId,
       double? startOdometer,
       double? endOdometer,
-      bool isConfirmed});
+      bool isConfirmed,
+      String? startLocationId,
+      String? endLocationId});
 }
 
 /// @nodoc
@@ -104,6 +108,8 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
     Object? startOdometer = freezed,
     Object? endOdometer = freezed,
     Object? isConfirmed = null,
+    Object? startLocationId = freezed,
+    Object? endLocationId = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -178,6 +184,14 @@ class _$TripCopyWithImpl<$Res, $Val extends Trip>
           ? _value.isConfirmed
           : isConfirmed // ignore: cast_nullable_to_non_nullable
               as bool,
+      startLocationId: freezed == startLocationId
+          ? _value.startLocationId
+          : startLocationId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endLocationId: freezed == endLocationId
+          ? _value.endLocationId
+          : endLocationId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -207,7 +221,9 @@ abstract class _$$TripImplCopyWith<$Res> implements $TripCopyWith<$Res> {
       String? vehicleId,
       double? startOdometer,
       double? endOdometer,
-      bool isConfirmed});
+      bool isConfirmed,
+      String? startLocationId,
+      String? endLocationId});
 }
 
 /// @nodoc
@@ -238,6 +254,8 @@ class __$$TripImplCopyWithImpl<$Res>
     Object? startOdometer = freezed,
     Object? endOdometer = freezed,
     Object? isConfirmed = null,
+    Object? startLocationId = freezed,
+    Object? endLocationId = freezed,
   }) {
     return _then(_$TripImpl(
       id: null == id
@@ -312,6 +330,14 @@ class __$$TripImplCopyWithImpl<$Res>
           ? _value.isConfirmed
           : isConfirmed // ignore: cast_nullable_to_non_nullable
               as bool,
+      startLocationId: freezed == startLocationId
+          ? _value.startLocationId
+          : startLocationId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      endLocationId: freezed == endLocationId
+          ? _value.endLocationId
+          : endLocationId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -337,7 +363,9 @@ class _$TripImpl extends _Trip {
       this.vehicleId,
       this.startOdometer,
       this.endOdometer,
-      this.isConfirmed = false})
+      this.isConfirmed = false,
+      this.startLocationId,
+      this.endLocationId})
       : _routePoints = routePoints,
         _expenses = expenses,
         super._();
@@ -402,10 +430,14 @@ class _$TripImpl extends _Trip {
   @override
   @JsonKey()
   final bool isConfirmed;
+  @override
+  final String? startLocationId;
+  @override
+  final String? endLocationId;
 
   @override
   String toString() {
-    return 'Trip(id: $id, startTime: $startTime, endTime: $endTime, distanceMiles: $distanceMiles, durationMinutes: $durationMinutes, routePoints: $routePoints, category: $category, customCategoryLabel: $customCategoryLabel, customCategoryColor: $customCategoryColor, purpose: $purpose, notes: $notes, startAddress: $startAddress, endAddress: $endAddress, expenses: $expenses, vehicleId: $vehicleId, startOdometer: $startOdometer, endOdometer: $endOdometer, isConfirmed: $isConfirmed)';
+    return 'Trip(id: $id, startTime: $startTime, endTime: $endTime, distanceMiles: $distanceMiles, durationMinutes: $durationMinutes, routePoints: $routePoints, category: $category, customCategoryLabel: $customCategoryLabel, customCategoryColor: $customCategoryColor, purpose: $purpose, notes: $notes, startAddress: $startAddress, endAddress: $endAddress, expenses: $expenses, vehicleId: $vehicleId, startOdometer: $startOdometer, endOdometer: $endOdometer, isConfirmed: $isConfirmed, startLocationId: $startLocationId, endLocationId: $endLocationId)';
   }
 
   @override
@@ -443,30 +475,37 @@ class _$TripImpl extends _Trip {
             (identical(other.endOdometer, endOdometer) ||
                 other.endOdometer == endOdometer) &&
             (identical(other.isConfirmed, isConfirmed) ||
-                other.isConfirmed == isConfirmed));
+                other.isConfirmed == isConfirmed) &&
+            (identical(other.startLocationId, startLocationId) ||
+                other.startLocationId == startLocationId) &&
+            (identical(other.endLocationId, endLocationId) ||
+                other.endLocationId == endLocationId));
   }
 
   @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      id,
-      startTime,
-      endTime,
-      distanceMiles,
-      durationMinutes,
-      const DeepCollectionEquality().hash(_routePoints),
-      category,
-      customCategoryLabel,
-      customCategoryColor,
-      purpose,
-      notes,
-      startAddress,
-      endAddress,
-      const DeepCollectionEquality().hash(_expenses),
-      vehicleId,
-      startOdometer,
-      endOdometer,
-      isConfirmed);
+  int get hashCode => Object.hashAll([
+        runtimeType,
+        id,
+        startTime,
+        endTime,
+        distanceMiles,
+        durationMinutes,
+        const DeepCollectionEquality().hash(_routePoints),
+        category,
+        customCategoryLabel,
+        customCategoryColor,
+        purpose,
+        notes,
+        startAddress,
+        endAddress,
+        const DeepCollectionEquality().hash(_expenses),
+        vehicleId,
+        startOdometer,
+        endOdometer,
+        isConfirmed,
+        startLocationId,
+        endLocationId
+      ]);
 
   @JsonKey(ignore: true)
   @override
@@ -494,7 +533,9 @@ abstract class _Trip extends Trip {
       final String? vehicleId,
       final double? startOdometer,
       final double? endOdometer,
-      final bool isConfirmed}) = _$TripImpl;
+      final bool isConfirmed,
+      final String? startLocationId,
+      final String? endLocationId}) = _$TripImpl;
   const _Trip._() : super._();
 
   @override
@@ -541,6 +582,10 @@ abstract class _Trip extends Trip {
   double? get endOdometer;
   @override
   bool get isConfirmed;
+  @override
+  String? get startLocationId;
+  @override
+  String? get endLocationId;
   @override
   @JsonKey(ignore: true)
   _$$TripImplCopyWith<_$TripImpl> get copyWith =>

@@ -75,7 +75,7 @@ class _AutoClassifyScreenState extends ConsumerState<AutoClassifyScreen> {
             ...settings.namedLocations.map((loc) => ListTile(
                   contentPadding: EdgeInsets.zero,
                   title: Text(loc.name),
-                  subtitle: Text('${loc.radiusMeters} m radius'),
+                  subtitle: Text('${loc.radiusMeters.toStringAsFixed(0)} m radius'),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () => notifier.setNamedLocations(
@@ -258,10 +258,11 @@ class _AutoClassifyScreenState extends ConsumerState<AutoClassifyScreen> {
     final loc = NamedLocation(
       id: const Uuid().v4(),
       name: name,
-      lat: pos?.latitude ?? 0.0,
-      lng: pos?.longitude ?? 0.0,
-      radiusMeters: radius,
-      category: cat,
+      latitude: pos?.latitude ?? 0.0,
+      longitude: pos?.longitude ?? 0.0,
+      radiusMeters: radius.toDouble(),
+      defaultCategory: cat,
+      createdAt: DateTime.now(),
     );
     ref.read(settingsProvider.notifier).setNamedLocations([
       ...ref.read(settingsProvider).namedLocations,
