@@ -35,7 +35,7 @@ class BackupService {
 
   /// Test seams. Null means "use the real Google Drive stack".
   BackupStore? _storeOverride;
-  GoogleDriveAuth? _authOverride;
+  DriveAuth? _authOverride;
 
   /// The store used for the current/last backup run, for state bookkeeping.
   BackupStore? _activeStore;
@@ -45,7 +45,7 @@ class BackupService {
   bool _running = false;
 
   @visibleForTesting
-  void setOverridesForTesting({BackupStore? store, GoogleDriveAuth? auth}) {
+  void setOverridesForTesting({BackupStore? store, DriveAuth? auth}) {
     _storeOverride = store;
     _authOverride = auth;
   }
@@ -166,13 +166,18 @@ class BackupService {
       final db = DatabaseService();
       final state = db.getBackupState();
       final now = DateTime.now();
-      if (!force &&
-          !shouldAutoBackup(
-            lastSuccess: state.lastSuccessAt,
-            now: now,
-            afterNewTrip: afterNewTrip,
-          )) {
-        return;
+      if (!force) {
+        // Never connected, or Disconnect reset the state: do not touch the
+        // plugin and leave the backup state exactly as it is. Without this a
+        // fresh install would flip to "Reconnect needed" on the first resume.
+        if (state.accountEmail == null) return;
+        if (!shouldAutoBackup(
+          lastSuccess: state.lastSuccessAt,
+          now: now,
+          afterNewTrip: afterNewTrip,
+        )) {
+          return;
+        }
       }
 
       final store = await _resolveStore();
@@ -199,8 +204,9 @@ class BackupService {
   }
 
   /// Returns the store to use for this run, or null when the run should be
-  /// skipped (backup not configured, or silent re-auth failed and the user
-  /// must reconnect — in which case the state is updated here).
+  /// skipped (backup not configured, or silent re-auth failed — in which case
+  /// the state is updated here, but only when an account had been connected
+  /// before; a never-connected user just isn't backed up yet).
   Future<BackupStore?> _resolveStore() async {
     final override = _storeOverride;
     if (override != null) {
@@ -208,13 +214,17 @@ class BackupService {
       _activeEmail ??= 'backup-test@example.com';
       return override;
     }
-    if (!driveBackupConfigured) return null;
-
-    final auth = _authOverride ?? GoogleDriveAuth.instance;
-    final client = await auth.silentClient();
+    final auth = _authOverride;
+    // Test seam: an injected [DriveAuth] stands in for a configured build, so
+    // the fake can be exercised without a client ID. Real builds keep the
+    // configured check: no client ID -> no plugin call at all.
+    if (auth == null && !driveBackupConfigured) return null;
+    final real = auth ?? GoogleDriveAuth.instance;
+    final client = await real.silentClient();
     if (client == null) {
       final db = DatabaseService();
       final state = db.getBackupState();
+      if (state.accountEmail == null) return null; // never connected
       state.lastAttemptAt = DateTime.now();
       state.needsReconnect = true;
       state.lastError =
@@ -223,7 +233,7 @@ class BackupService {
       return null;
     }
     _activeStore = DriveBackupStore(drive.DriveApi(client));
-    _activeEmail = auth.lastAccountEmail;
+    _activeEmail = real.lastAccountEmail;
     return _activeStore;
   }
 

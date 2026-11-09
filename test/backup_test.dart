@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:googleapis_auth/googleapis_auth.dart' as gapis;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:milemaid/core/models/backup_state.dart';
 import 'package:milemaid/core/models/named_location.dart';
@@ -10,6 +11,7 @@ import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/vehicle.dart';
 import 'package:milemaid/core/services/backup_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/drive_backup_store.dart';
 
 /// All data in this file is made up (fake ids, generic purposes, coordinates
 /// near lat 40 / lng -100), per AGENTS.md. No network: BackupStore is faked.
@@ -40,6 +42,29 @@ class FakeBackupStore implements BackupStore {
     final bytes = files[id];
     if (bytes == null) throw StateError('No such file: $id');
     return bytes;
+  }
+}
+
+/// Fake [DriveAuth]: silent re-auth always fails, but every attempt is
+/// counted so tests can assert the plugin was (or was not) touched.
+class FakeDriveAuth implements DriveAuth {
+  int silentCalls = 0;
+
+  @override
+  String? lastAccountEmail = 'you@example.com';
+
+  @override
+  Future<gapis.AuthClient?> silentClient() async {
+    silentCalls++;
+    return null; // sign-in expired / revoked: reconnect needed
+  }
+
+  @override
+  Future<String> connect() async => 'you@example.com';
+
+  @override
+  Future<void> disconnect() async {
+    lastAccountEmail = null;
   }
 }
 
@@ -273,9 +298,20 @@ void main() {
   });
 
   group('autoBackup', () {
+    // The auto path only runs for a previously connected account (R2), so
+    // seed a connected state first.
+    Future<void> seedConnectedAccount([DateTime? lastSuccess]) async {
+      final db = DatabaseService();
+      final state = BackupState()
+        ..accountEmail = 'you@example.com'
+        ..lastSuccessAt = lastSuccess;
+      await db.saveBackupState(state);
+    }
+
     test('uploads today\'s snapshot and records success state', () async {
       final db = DatabaseService();
       await db.saveTrip(_trip(id: 't-1'));
+      await seedConnectedAccount();
 
       await BackupService.instance.autoBackup(afterNewTrip: true);
 
@@ -296,6 +332,7 @@ void main() {
         () async {
       final db = DatabaseService();
       final state = BackupState()
+        ..accountEmail = 'you@example.com'
         ..lastSuccessAt = DateTime.now().subtract(const Duration(minutes: 5));
       await db.saveBackupState(state);
 
@@ -309,6 +346,7 @@ void main() {
     test('a store that throws records the error and returns normally',
         () async {
       final db = DatabaseService();
+      await seedConnectedAccount();
       fake.throwOnUpload = Exception('Drive is down');
 
       // Must complete without throwing.
@@ -323,10 +361,8 @@ void main() {
 
     test('only one backup runs at a time', () async {
       final db = DatabaseService();
-      final state = db.getBackupState();
-      state.lastSuccessAt =
-          DateTime.now().subtract(const Duration(days: 2)); // force-eligible
-      await db.saveBackupState(state);
+      await seedConnectedAccount(
+          DateTime.now().subtract(const Duration(days: 2))); // force-eligible
 
       // Second call while the first is running is dropped (single-flight).
       await Future.wait([
@@ -336,6 +372,70 @@ void main() {
       // Both files would be the same name anyway; assert no crash and a
       // success was recorded exactly once.
       expect(db.getBackupState().lastSuccessAt, isNotNull);
+    });
+  });
+
+  group('auto path vs never-connected / disconnected accounts (R2)', () {
+    test('never-connected resume leaves the state untouched', () async {
+      final db = DatabaseService();
+      // clearAllData in setUp leaves no backup state at all: fresh install.
+      expect(db.getBackupState().accountEmail, isNull);
+
+      await BackupService.instance.autoBackup(afterNewTrip: true);
+
+      final state = db.getBackupState();
+      expect(fake.files, isEmpty); // the plugin/store was never touched
+      expect(state.accountEmail, isNull);
+      expect(state.lastSuccessAt, isNull);
+      expect(state.lastAttemptAt, isNull);
+      expect(state.lastError, isNull);
+      expect(state.needsReconnect, isFalse);
+    });
+
+    test('connected account whose silent re-auth fails -> Reconnect needed',
+        () async {
+      final db = DatabaseService();
+      final state = BackupState()..accountEmail = 'you@example.com';
+      await db.saveBackupState(state);
+
+      final auth = FakeDriveAuth();
+      BackupService.instance.setOverridesForTesting(store: null, auth: auth);
+
+      await BackupService.instance.autoBackup(afterNewTrip: true);
+
+      expect(auth.silentCalls, 1); // the silent attempt was made
+      final after = db.getBackupState();
+      expect(after.needsReconnect, isTrue);
+      expect(after.lastError, contains('Reconnect needed'));
+      expect(after.lastAttemptAt, isNotNull);
+      expect(after.lastSuccessAt, isNull);
+      // accountEmail is kept so Settings can still show whom to reconnect.
+      expect(after.accountEmail, 'you@example.com');
+    });
+
+    test('disconnect then resume leaves "Not connected"', () async {
+      final db = DatabaseService();
+      final state = BackupState()
+        ..accountEmail = 'you@example.com'
+        ..needsReconnect = true
+        ..lastError = 'Reconnect needed: Google Drive sign-in expired.';
+      await db.saveBackupState(state);
+
+      // Exactly what the Settings Disconnect button does (backup_section.dart).
+      final auth = FakeDriveAuth();
+      await auth.disconnect();
+      final reset = db.getBackupState()..reset();
+      await db.saveBackupState(reset);
+
+      BackupService.instance.setOverridesForTesting(store: null, auth: auth);
+      await BackupService.instance.autoBackup(afterNewTrip: true);
+
+      expect(auth.silentCalls, 0); // never touched the sign-in plugin
+      final after = db.getBackupState();
+      expect(after.accountEmail, isNull);
+      expect(after.needsReconnect, isFalse);
+      expect(after.lastError, isNull);
+      expect(after.lastSuccessAt, isNull); // Settings shows "Not connected"
     });
   });
 
