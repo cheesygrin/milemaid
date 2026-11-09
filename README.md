@@ -152,8 +152,8 @@ ID; otherwise Settings shows "Google Drive backup isn't set up in this build."
 4. Copy `ios/Flutter/Secrets.example.xcconfig` to `ios/Flutter/Secrets.xcconfig`
    (gitignored) and fill in the client ID and its reversed form:
    ```
-   GOOGLE_IOS_CLIENT_ID = 1234567890-abcdef.apps.googleusercontent.com
-   GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.1234567890-abcdef
+   GOOGLE_IOS_CLIENT_ID = <your-ios-oauth-client-id>
+   GOOGLE_REVERSED_CLIENT_ID = <your-ios-oauth-client-id-reversed>
    ```
 5. Copy `config/secrets.example.json` to `config/secrets.json` (gitignored)
    and set `"GOOGLE_IOS_CLIENT_ID"` to the same client ID.
