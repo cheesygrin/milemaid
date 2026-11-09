@@ -90,5 +90,22 @@
 	<!-- Google Maps key comes from ios/Flutter/Secrets.xcconfig (gitignored). -->
 	<key>GMSApiKey</key>
 	<string>$(GOOGLE_MAPS_IOS_API_KEY)</string>
+
+	<!-- Google Sign-In (Drive backup): client ID comes from Secrets.xcconfig. -->
+	<!-- All values are empty in the public repo; the app builds and runs fine -->
+	<!-- with them unset (backup features then report "not configured"). -->
+	<key>GIDClientID</key>
+	<string>$(GOOGLE_IOS_CLIENT_ID)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>$(GOOGLE_REVERSED_CLIENT_ID)</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
