@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/constants/design_tokens.dart';
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/shared/widgets/route_preview.dart';
 import 'package:milemaid/shared/widgets/trip_card.dart';
@@ -16,6 +17,7 @@ class SwipeableTripCard extends StatefulWidget {
     required this.onClassified,
     this.enableSwipe = true,
     this.showMap = false,
+    this.placesById = const {},
   });
 
   final Trip trip;
@@ -24,6 +26,9 @@ class SwipeableTripCard extends StatefulWidget {
   final VoidCallback onTap;
   final void Function(TripCategory category) onClassified;
   final bool enableSwipe;
+
+  /// Known named places, forwarded to [TripCard] for the From/To line.
+  final Map<String, NamedLocation> placesById;
 
   @override
   State<SwipeableTripCard> createState() => _SwipeableTripCardState();
@@ -122,7 +127,12 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
   @override
   Widget build(BuildContext context) {
     if (!widget.enableSwipe) {
-      return TripCard(trip: widget.trip, onTap: widget.onTap);
+      return TripCard(
+        trip: widget.trip,
+        onTap: widget.onTap,
+        showNeedsReview: !widget.trip.isConfirmed,
+        placesById: widget.placesById,
+      );
     }
 
     final businessReveal = (_dragOffset / _maxDrag).clamp(0.0, 1.0);
@@ -195,6 +205,7 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
                             points: widget.trip.routeLatLng,
                           )
                         : null,
+                    placesById: widget.placesById,
                   ),
                 ),
               ),

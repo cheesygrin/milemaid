@@ -74,6 +74,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => context.push('/settings/vehicles'),
           ),
 
+          const _SectionHeader('Places & purposes'),
+          ListTile(
+            leading: const Icon(Icons.place_outlined),
+            title: const Text('Places'),
+            subtitle: const Text('Named locations that label your drives'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/places'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.label_outline),
+            title: const Text('Trip purposes'),
+            subtitle: const Text('Presets for classifying drives'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push('/settings/purposes'),
+          ),
+
           const _SectionHeader('Reports'),
           ListTile(
             leading: const Icon(Icons.description_outlined),

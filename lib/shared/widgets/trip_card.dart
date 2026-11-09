@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/trip.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/shared/widgets/category_chip.dart';
 
@@ -13,12 +15,18 @@ class TripCard extends StatelessWidget {
   /// Optional full-width widget shown at the top of the card (route map preview).
   final Widget? header;
 
+  /// Known named places, used to label the From/To line. Pass
+  /// [locationsById] of the user's places; the default empty map falls back
+  /// to addresses (so widget tests need no Hive).
+  final Map<String, NamedLocation> placesById;
+
   const TripCard({
     super.key,
     required this.trip,
     required this.onTap,
     this.showNeedsReview = false,
     this.header,
+    this.placesById = const {},
   });
 
   @override
@@ -99,6 +107,15 @@ class TripCard extends StatelessWidget {
               Text(
                 '${DateHelpers.formatTime(trip.startTime)} → ${DateHelpers.formatTime(trip.endTime)}',
                 style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              // One-line From → To; long labels ellipsize so the card never
+              // grows taller than before.
+              Text(
+                '${placeLabel(trip.startLocationId, trip.startAddress, placesById)} → ${placeLabel(trip.endLocationId, trip.endAddress, placesById)}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
               ),
               if (trip.purpose != null && trip.purpose!.isNotEmpty) ...[
                 const SizedBox(height: 8),

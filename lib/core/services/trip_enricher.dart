@@ -17,6 +17,10 @@ class TripEnricher {
 
   TripEnricher({required this.places, required this.lookup});
 
+  /// Trip ids already attempted by [backfill] during this app session, so a
+  /// trip the geocoder cannot resolve is tried at most once per launch.
+  final Set<String> _triedTripIds = {};
+
   static final TripEnricher instance = TripEnricher(
     places: () => DatabaseService().getSettings().namedLocations,
     lookup: PlatformAddressLookup(),
@@ -87,18 +91,35 @@ class TripEnricher {
     return candidates.take(max).toList();
   }
 
+  /// True when [enrich] would have changed any of the four enrichment fields
+  /// (start/end location id and address). Pure, so it is unit-tested.
+  static bool enrichmentChanged(Trip before, Trip after) {
+    return before.startLocationId != after.startLocationId ||
+        before.startAddress != after.startAddress ||
+        before.endLocationId != after.endLocationId ||
+        before.endAddress != after.endAddress;
+  }
+
   /// Enriches the trips that are missing addresses, one at a time with a
   /// 1-second pause between lookups (Apple rate-limits geocoding), saving
-  /// each. Returns how many trips were saved.
+  /// each trip only when enriching actually changed it. A trip already
+  /// attempted this session is skipped so an unresolvable address is not
+  /// retried on every resume. Returns how many trips were saved.
   Future<int> backfill() async {
     final db = DatabaseService();
-    final targets = tripsNeedingAddresses(db.getAllTrips());
+    final targets = tripsNeedingAddresses(db.getAllTrips())
+        .where((t) => !_triedTripIds.contains(t.id))
+        .toList();
     var count = 0;
-    for (final trip in targets) {
+    for (var i = 0; i < targets.length; i++) {
+      final trip = targets[i];
+      _triedTripIds.add(trip.id);
       final enriched = await enrich(trip);
-      await db.saveTrip(enriched);
-      count++;
-      if (count < targets.length) {
+      if (enrichmentChanged(trip, enriched)) {
+        await db.saveTrip(enriched);
+        count++;
+      }
+      if (i < targets.length - 1) {
         await Future<void>.delayed(const Duration(seconds: 1));
       }
     }

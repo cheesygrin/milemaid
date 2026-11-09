@@ -4,6 +4,8 @@ import 'package:milemaid/core/constants/irs_rates.dart';
 import 'package:milemaid/core/models/report.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/export_rows.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -58,6 +60,7 @@ class ExportService {
   Future<pw.Document> _buildPdfDocument(
       Report report, String userName, String? userEmail, {bool isPro = true}) async {
     final pdf = pw.Document();
+    final placesById = locationsById(_db.getAllLocations());
 
     final dateFmt = DateFormat('MMM dd, yyyy');
     final rangeStr = '${dateFmt.format(report.startDate)} – ${dateFmt.format(report.endDate)}';
@@ -217,29 +220,30 @@ class ExportService {
               pw.Table(
                 border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.4),
                 columnWidths: {
-                  0: const pw.FlexColumnWidth(1.6),
-                  1: const pw.FlexColumnWidth(2.2),
-                  2: const pw.FlexColumnWidth(0.9),
-                  3: const pw.FlexColumnWidth(1.1),
-                  4: const pw.FlexColumnWidth(1.8),
+                  0: const pw.FlexColumnWidth(1.1),
+                  1: const pw.FlexColumnWidth(3.0),
+                  2: const pw.FlexColumnWidth(0.8),
+                  3: const pw.FlexColumnWidth(1.0),
+                  4: const pw.FlexColumnWidth(1.5),
                 },
                 children: [
-                  _tableHeader(['Date', 'Time', 'Miles', 'Category', 'Purpose / Notes']),
-                  ...chunks[c].map((trip) => pw.TableRow(
-                    children: [
-                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(DateFormat('MM/dd/yy').format(trip.startTime), style: const pw.TextStyle(fontSize: 8))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(
-                        '${DateFormat('h:mma').format(trip.startTime)}–${DateFormat('h:mma').format(trip.endTime)}',
-                        style: const pw.TextStyle(fontSize: 8),
-                      )),
-                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(trip.distanceMiles.toStringAsFixed(1), style: const pw.TextStyle(fontSize: 8))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(trip.categoryLabel, style: const pw.TextStyle(fontSize: 8))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(
-                        (trip.purpose ?? trip.notes ?? '').toString().substring(0, (trip.purpose ?? trip.notes ?? '').length.clamp(0, 28)),
-                        style: const pw.TextStyle(fontSize: 8),
-                      )),
-                    ],
-                  )),
+                  // Plain '->' rather than '→': the built-in PDF fonts have
+                  // no arrow glyph.
+                  _tableHeader(['Date', 'From -> To', 'Miles', 'Category', 'Purpose']),
+                  ...chunks[c].map((trip) {
+                    final fromTo =
+                        '${placeLabel(trip.startLocationId, trip.startAddress, placesById)} -> ${placeLabel(trip.endLocationId, trip.endAddress, placesById)}';
+                    final purpose = trip.purpose ?? '';
+                    return pw.TableRow(
+                      children: [
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(pdfFit(DateFormat('MM/dd/yy').format(trip.startTime), 8), style: const pw.TextStyle(fontSize: 8))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(pdfFit(fromTo, 38), style: const pw.TextStyle(fontSize: 8))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(trip.distanceMiles.toStringAsFixed(1), style: const pw.TextStyle(fontSize: 8))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(pdfFit(trip.categoryLabel, 12), style: const pw.TextStyle(fontSize: 8))),
+                        pw.Padding(padding: const pw.EdgeInsets.all(4), child: pw.Text(pdfFit(purpose, 24), style: const pw.TextStyle(fontSize: 8))),
+                      ],
+                    );
+                  }),
                 ],
               ),
               pw.SizedBox(height: 20),
@@ -300,24 +304,12 @@ class ExportService {
 
   Future<String> exportCsv(DateTime start, DateTime end) async {
     final trips = _db.getTripsInRange(start, end);
+    final placesById = locationsById(_db.getAllLocations());
     final buffer = StringBuffer();
 
-    buffer.writeln('Date,Start Time,End Time,Distance (mi),Duration (min),Category,Purpose,Notes,Start Address,End Address,Expenses (USD),Vehicle ID');
+    buffer.writeln(csvHeader().map(csvEscape).join(','));
     for (final t in trips) {
-      buffer.writeln([
-        DateFormat('yyyy-MM-dd').format(t.startTime),
-        DateFormat('HH:mm').format(t.startTime),
-        DateFormat('HH:mm').format(t.endTime),
-        t.distanceMiles.toStringAsFixed(2),
-        t.durationMinutes,
-        t.categoryLabel,
-        _csvEscape(t.purpose ?? ''),
-        _csvEscape(t.notes ?? ''),
-        _csvEscape(t.startAddress ?? ''),
-        _csvEscape(t.endAddress ?? ''),
-        t.totalExpenses.toStringAsFixed(2),
-        t.vehicleId ?? '',
-      ].join(','));
+      buffer.writeln(csvRow(t, placesById).map(csvEscape).join(','));
     }
 
     final dir = await getTemporaryDirectory();
@@ -328,5 +320,7 @@ class ExportService {
     return file.path;
   }
 
-  String _csvEscape(String v) => v.contains(',') || v.contains('"') ? '"${v.replaceAll('"', '""')}"' : v;
+  /// Exposed for tests: CSV escaping now lives in the pure helper
+  /// [csvEscape] in export_rows.dart.
+  static String csvEscapeField(String v) => csvEscape(v);
 }

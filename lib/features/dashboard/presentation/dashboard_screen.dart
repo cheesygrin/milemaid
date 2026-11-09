@@ -6,6 +6,9 @@ import 'package:milemaid/core/constants/irs_rates.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/constants/design_tokens.dart';
+import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
@@ -13,6 +16,10 @@ import 'package:milemaid/shared/widgets/live_trip_card.dart';
 import 'package:milemaid/shared/widgets/stat_card.dart';
 import 'package:milemaid/features/trips/presentation/classify_queue_section.dart';
 import 'package:milemaid/shared/widgets/trip_card.dart';
+
+/// Current named places keyed by id, for the From/To labels on trip cards.
+Map<String, NamedLocation> get _placesById =>
+    locationsById(DatabaseService().getAllLocations());
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -233,6 +240,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   ...dash.recentTrips.map((t) => TripCard(
                         trip: t,
                         onTap: () => context.push('/trips/${t.id}'),
+                        placesById: _placesById,
                       )),
 
                 const SizedBox(height: 40),

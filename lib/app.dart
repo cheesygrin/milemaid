@@ -13,8 +13,10 @@ import 'package:milemaid/features/reports/presentation/pdf_preview_screen.dart';
 import 'package:milemaid/features/reports/presentation/reports_screen.dart';
 import 'package:milemaid/features/settings/presentation/auto_classify_screen.dart';
 import 'package:milemaid/features/settings/presentation/custom_categories_screen.dart';
+import 'package:milemaid/features/settings/presentation/places_screen.dart';
 import 'package:milemaid/features/settings/presentation/settings_screen.dart';
 import 'package:milemaid/features/settings/presentation/vehicles_screen.dart';
+import 'package:milemaid/features/settings/presentation/purposes_screen.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/presentation/add_manual_trip_screen.dart';
 import 'package:milemaid/features/trips/presentation/trip_detail_screen.dart';
@@ -73,6 +75,14 @@ final _router = GoRouter(
         GoRoute(
           path: 'custom-categories',
           builder: (context, state) => const CustomCategoriesScreen(),
+        ),
+        GoRoute(
+          path: 'places',
+          builder: (context, state) => const PlacesScreen(),
+        ),
+        GoRoute(
+          path: 'purposes',
+          builder: (context, state) => const PurposesScreen(),
         ),
       ],
     ),
@@ -202,10 +212,16 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       // Close a drive that ended while the app wasn't getting GPS fixes.
       TrackingService().checkForEndedTrip();
       // Fill in missing addresses in the background (one pass at a time).
+      // Errors are swallowed here: a failed geocoder pass must never crash
+      // the app on resume; it just tries again next launch.
       if (!_backfillRunning) {
         _backfillRunning = true;
         TripEnricher.instance
             .backfill()
+            .catchError((Object e) {
+              debugPrint('TripEnricher.backfill failed: $e');
+              return 0;
+            })
             .whenComplete(() => _backfillRunning = false);
       }
       ref.read(dashboardProvider.notifier).refresh();

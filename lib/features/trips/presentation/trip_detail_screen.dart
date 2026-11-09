@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/config/app_config.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
+import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/trip_expense.dart';
+import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
@@ -28,16 +32,30 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
   final _purposeCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   TripCategory _category = TripCategory.business;
-  String? _customLabel;
-  int? _customColor;
   double? _startOdo;
   double? _endOdo;
+  String? _customLabel;
+  int? _customColor;
   List<TripExpense> _expenses = [];
 
   @override
   void initState() {
     super.initState();
     _loadTrip();
+  }
+
+  /// Current named places keyed by id, for the From/To labels.
+  Map<String, NamedLocation> get _placesById =>
+      locationsById(DatabaseService().getAllLocations());
+
+  /// Re-reads the trip from the provider without touching edit-in-progress
+  /// state (unlike [_loadTrip], which resets the controllers).
+  void _refreshTripObject() {
+    final trips = ref.read(tripsProvider);
+    final idx = trips.indexWhere((t) => t.id == widget.tripId);
+    if (idx != -1) {
+      setState(() => _trip = trips[idx]);
+    }
   }
 
   void _loadTrip() {
@@ -52,12 +70,12 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
     _trip = trips[idx];
     _category = _trip.category;
-    _customLabel = _trip.customCategoryLabel;
-    _customColor = _trip.customCategoryColor;
     _purposeCtrl.text = _trip.purpose ?? '';
     _notesCtrl.text = _trip.notes ?? '';
     _startOdo = _trip.startOdometer;
     _endOdo = _trip.endOdometer;
+    _customLabel = _trip.customCategoryLabel;
+    _customColor = _trip.customCategoryColor;
     _expenses = List.from(_trip.expenses);
   }
 
@@ -66,11 +84,11 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       category: _category,
       customCategoryLabel: _customLabel,
       customCategoryColor: _customColor,
+      expenses: _expenses,
       purpose: _purposeCtrl.text.trim().isEmpty ? null : _purposeCtrl.text.trim(),
       notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
       startOdometer: _startOdo,
       endOdometer: _endOdo,
-      expenses: _expenses,
       isConfirmed: true,
     );
     await ref.read(tripsProvider.notifier).addOrUpdateTrip(updated);
@@ -99,7 +117,6 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     }
   }
 
-  /// Toggle a trip between Business and Personal from the detail screen.
   Future<void> _toggleCategory() async {
     final isBusiness = _trip.category == TripCategory.business;
     final updated = _trip.copyWith(
@@ -183,6 +200,169 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
     });
   }
 
+  /// Purpose preset chips: the end place's [NamedLocation.defaultPurpose]
+  /// first (highlighted as a suggestion, never auto-applied), then the
+  /// presets sorted by [PurposePreset.sortOrder].
+  List<Widget> get _purposeChips {
+    final chips = <Widget>[];
+
+    final endPlace = _placesById[_trip.endLocationId];
+    final suggestion = endPlace?.defaultPurpose;
+    if (suggestion != null && suggestion.isNotEmpty) {
+      chips.add(
+        ActionChip(
+          tooltip: 'Suggested from ${endPlace!.name}',
+          backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+          side: BorderSide(color: AppColors.accent.withValues(alpha: 0.6)),
+          label: Text(
+            suggestion,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.accent,
+            ),
+          ),
+          onPressed: () => _applyPurpose(
+            suggestion,
+            endPlace.defaultCategory ?? _category,
+          ),
+        ),
+      );
+    }
+
+    final presets = DatabaseService().getAllPurposes();
+    chips.addAll(
+      presets.map(
+        (p) => ActionChip(
+          label: Text(p.name, style: const TextStyle(fontSize: 13)),
+          onPressed: () => _applyPurpose(p.name, p.category),
+        ),
+      ),
+    );
+    return chips;
+  }
+
+  /// Fills the purpose/category draft from a tapped chip and reveals the
+  /// Save button; nothing is written until the user saves.
+  void _applyPurpose(String purpose, TripCategory category) {
+    setState(() {
+      _category = category;
+      _purposeCtrl.text = purpose;
+      _isEditing = true;
+    });
+  }
+
+  Widget _endpointRow(
+    String title,
+    String? locationId,
+    String? address,
+    LatLngPoint? point,
+  ) {
+    final label = placeLabel(locationId, address, _placesById);
+    return ListTile(
+      dense: true,
+      title: Text(title, style: Theme.of(context).textTheme.titleSmall),
+      subtitle: Text(label),
+      trailing: point == null
+          ? null
+          : TextButton(
+              onPressed: () => _nameThisPlace(point, address),
+              child: const Text('Name this place'),
+            ),
+    );
+  }
+
+  /// "Name this place": asks for a name, a geofence radius (50-500 m) and an
+  /// optional default category, then creates a [NamedLocation] at [point],
+  /// re-matches every trip against the new place and refreshes.
+  Future<void> _nameThisPlace(LatLngPoint point, String? address) async {
+    final nameCtrl = TextEditingController();
+    var radius = 150.0;
+    TripCategory? defaultCategory;
+    var nameError = false;
+
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Name this place'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameCtrl,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  errorText: nameError ? 'Name is required' : null,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text('Radius: ${radius.round()} m',
+                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              Slider(
+                value: radius,
+                min: 50,
+                max: 500,
+                divisions: 45,
+                label: '${radius.round()} m',
+                onChanged: (v) => setDialogState(() => radius = v),
+              ),
+              DropdownButtonFormField<TripCategory>(
+                initialValue: defaultCategory,
+                decoration: const InputDecoration(labelText: 'Default category (optional)'),
+                items: [
+                  const DropdownMenuItem(value: null, child: Text('None')),
+                  ...TripCategory.values.map(
+                    (c) => DropdownMenuItem(value: c, child: Text(c.displayName)),
+                  ),
+                ],
+                onChanged: (v) => setDialogState(() => defaultCategory = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) {
+                  setDialogState(() => nameError = true);
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true) return;
+
+    final place = NamedLocation(
+      id: const Uuid().v4(),
+      name: nameCtrl.text.trim(),
+      latitude: point.latitude,
+      longitude: point.longitude,
+      radiusMeters: radius,
+      // Store the trip's address on the place so later trips here inherit it.
+      address: address,
+      defaultCategory: defaultCategory,
+      createdAt: DateTime.now(),
+    );
+    await DatabaseService().saveLocation(place);
+    final changed = await TripEnricher.instance.rematchAll();
+    await ref.read(tripsProvider.notifier).refresh();
+    _refreshTripObject();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved "${place.name}". $changed trip(s) re-matched.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_maybeTrip == null) {
@@ -200,7 +380,6 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           IconButton(icon: const Icon(Icons.delete_outline), onPressed: _delete),
         ],
       ),
-      bottomNavigationBar: _buildBottomBar(),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -243,16 +422,28 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Addresses (resolved only when geocoding is enabled)
-          if (!_isEditing && (_trip.startAddress != null || _trip.endAddress != null)) ...[
-            const Text('Addresses', style: TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            if (_trip.startAddress != null)
-              Text('From: ${_trip.startAddress}', style: const TextStyle(color: AppColors.textSecondary)),
-            if (_trip.endAddress != null)
-              Text('To: ${_trip.endAddress}', style: const TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 16),
-          ],
+          // From / To endpoints, with a "Name this place" action each when
+          // the route has points.
+          Card(
+            child: Column(
+              children: [
+                _endpointRow(
+                  'From',
+                  _trip.startLocationId,
+                  _trip.startAddress,
+                  _trip.routePoints.isNotEmpty ? _trip.routePoints.first : null,
+                ),
+                const Divider(height: 1),
+                _endpointRow(
+                  'To',
+                  _trip.endLocationId,
+                  _trip.endAddress,
+                  _trip.routePoints.isNotEmpty ? _trip.routePoints.last : null,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Expenses
           if (!_isEditing) ...[
@@ -283,7 +474,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: const Icon(Icons.receipt_outlined, size: 20),
                     title: Text(
-                        '${entry.value.type.displayName} — \$${(entry.value.amountCents / 100).toStringAsFixed(2)}'),
+                        '${entry.value.type.displayName} - \$${(entry.value.amountCents / 100).toStringAsFixed(2)}'),
                     subtitle: entry.value.note != null ? Text(entry.value.note!) : null,
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20),
@@ -343,6 +534,19 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
             ),
           const SizedBox(height: 20),
 
+          // Purpose presets (sorted by sortOrder); the trip's end place may
+          // suggest one first. Tapping a chip fills the purpose text and
+          // category; the existing Save confirms the trip. Free-text editing
+          // below still works.
+          if (_purposeChips.isNotEmpty) ...[
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _purposeChips,
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // Editable fields
           TextField(
             controller: _purposeCtrl,
@@ -384,6 +588,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
           const SizedBox(height: 24),
         ],
       ),
+      bottomNavigationBar: _buildBottomBar(),
     );
   }
 
