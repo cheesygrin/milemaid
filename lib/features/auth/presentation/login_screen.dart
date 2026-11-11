@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/services/auth_service.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
+import 'package:milemaid/features/trips/providers/trips_provider.dart';
 
 /// Login screen: Google Sign-In plus email/password (sign in or create
 /// account). Reached from Settings and after onboarding.
@@ -36,9 +38,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await action();
       if (!mounted) return;
       final email = AuthService.instance.currentUser?.email;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(email == null ? 'Signed in' : 'Signed in as $email')),
-      );
+      // Restore trips previously backed up to this account.
+      var restored = 0;
+      try {
+        restored = await TripSyncService.instance.pullAndMerge();
+        ref.read(tripsProvider.notifier).refresh();
+      } catch (_) {}
+      if (!mounted) return;
+      final msg = restored > 0
+          ? 'Signed in as $email. Restored $restored drive(s).'
+          : (email == null ? 'Signed in' : 'Signed in as $email');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       if (context.canPop()) context.pop();
     } catch (e) {
       if (mounted) setState(() => _error = AuthService.friendlyMessage(e));

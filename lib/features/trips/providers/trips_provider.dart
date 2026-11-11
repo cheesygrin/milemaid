@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'trips_provider.g.dart';
@@ -21,11 +24,13 @@ class Trips extends _$Trips {
   Future<void> addOrUpdateTrip(Trip trip) async {
     await _db.saveTrip(trip);
     state = _db.getAllTrips();
+    unawaited(TripSyncService.instance.upsert(trip));
   }
 
   Future<void> deleteTrip(String id) async {
     await _db.deleteTrip(id);
     state = _db.getAllTrips();
+    unawaited(TripSyncService.instance.remove(id));
   }
 
   /// MileIQ-style classify: set category and mark confirmed.
@@ -60,6 +65,7 @@ class Trips extends _$Trips {
     );
     await _db.saveTrip(returnTrip);
     state = _db.getAllTrips();
+    unawaited(TripSyncService.instance.upsert(returnTrip));
     return returnTrip;
   }
 }
