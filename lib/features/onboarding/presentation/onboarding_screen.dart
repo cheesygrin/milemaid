@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
+import 'package:milemaid/core/services/auth_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
+import 'package:milemaid/features/trips/providers/trips_provider.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool _busyAuth = false;
 
   final List<_OnboardPage> _pages = const [
     _OnboardPage(
@@ -95,6 +100,34 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     return access;
   }
 
+  Future<void> _googleSignIn() async {
+    if (!AuthService.instance.googleConfigured) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Google sign-in is not configured yet. Use email instead.')),
+        );
+      }
+      return;
+    }
+    setState(() => _busyAuth = true);
+    try {
+      await AuthService.instance.signInWithGoogle();
+      try {
+        await TripSyncService.instance.pullAndMerge();
+        ref.read(tripsProvider.notifier).refresh();
+      } catch (_) {}
+      await _finishOnboarding();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _busyAuth = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AuthService.friendlyMessage(e))),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -122,6 +155,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   );
                 },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _busyAuth ? null : _googleSignIn,
+                    icon: const Icon(Icons.g_mobiledata, size: 26),
+                    label: const Text('Continue with Google'),
+                    style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48)),
+                  ),
+                  TextButton(
+                    onPressed: _busyAuth ? null : () => context.push('/login'),
+                    child: const Text('Sign in with email'),
+                  ),
+                ],
               ),
             ),
             Padding(
