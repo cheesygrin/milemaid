@@ -9,7 +9,9 @@ import 'package:milemaid/core/config/app_config.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/constants/irs_rates.dart';
+import 'package:milemaid/core/services/auth_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/features/auth/providers/auth_provider.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/sample_data_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
@@ -54,6 +56,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => _editText(context, 'Email', settings.email, (v) {
               ref.read(settingsProvider.notifier).update(settings.copyWith(email: v));
             }),
+          ),
+
+          const _SectionHeader('Account'),
+          Consumer(
+            builder: (context, ref, _) {
+              final user = ref.watch(authStateProvider).value;
+              if (user == null) {
+                return ListTile(
+                  leading: const Icon(Icons.cloud_outlined),
+                  title: const Text('Sign in'),
+                  subtitle: const Text('Back up your drives to the cloud'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push('/login'),
+                );
+              }
+              return ListTile(
+                leading: const Icon(Icons.cloud_done_outlined),
+                title: Text('Signed in as ${user.email ?? 'Google account'}'),
+                subtitle: const Text('Tap to sign out'),
+                onTap: () => AuthService.instance.signOut(),
+              );
+            },
           ),
 
           const _SectionHeader('Mileage Rate'),

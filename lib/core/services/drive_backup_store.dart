@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis_auth/googleapis_auth.dart' as gapis;
 import 'package:milemaid/core/config/backup_config.dart';
+import 'package:milemaid/core/services/google_sign_in_bootstrap.dart';
 import 'package:milemaid/core/models/backup_state.dart';
 
 /// Folder all MileMaid backups live in, inside the user's My Drive. Because
@@ -152,7 +153,7 @@ class GoogleDriveAuth implements DriveAuth {
       throw StateError(
           'Google Drive backup is not configured in this build.');
     }
-    await GoogleSignIn.instance.initialize(clientId: kGoogleIosClientId);
+    await ensureGoogleSignInInitialized();
     _initialized = true;
   }
 

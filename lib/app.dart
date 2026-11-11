@@ -10,6 +10,7 @@ import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
+import 'package:milemaid/features/auth/presentation/login_screen.dart';
 import 'package:milemaid/features/dashboard/presentation/dashboard_screen.dart';
 import 'package:milemaid/features/monetization/presentation/paywall_screen.dart';
 import 'package:milemaid/features/onboarding/presentation/onboarding_screen.dart';
@@ -61,6 +62,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/add-manual',
       builder: (context, state) => const AddManualTripScreen(),
+    ),
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
       path: '/reports',

@@ -68,3 +68,7 @@ app.*.map.json
 # Local-only build settings (Google OAuth client IDs etc.). See ios/Flutter/Secrets.example.xcconfig
 ios/Flutter/Secrets.xcconfig
 config/secrets.json
+
+# Firebase config (contains the restricted Firebase API key; regenerable via
+# `firebase apps:sdkconfig IOS <appId> --project milemaid`)
+ios/Runner/GoogleService-Info.plist
