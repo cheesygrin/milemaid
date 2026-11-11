@@ -234,12 +234,18 @@ class _SwipeHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Only draw the hint on the side being actively swiped toward. At rest
+    // (opacity == 0) both sides are fully transparent, so after a right-swipe
+    // (Business) the Personal hint on the left can't bleed through — removing
+    // the ambiguity about which category was just recorded.
+    if (opacity <= 0) return const SizedBox.shrink();
+
     return Container(
-      color: color.withValues(alpha: 0.12 + opacity * 0.2),
+      color: color.withValues(alpha: opacity * 0.28),
       alignment: alignment,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.m),
       child: Opacity(
-        opacity: 0.35 + opacity * 0.65,
+        opacity: opacity.clamp(0.0, 1.0),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
