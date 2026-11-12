@@ -147,9 +147,7 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
         ? _springAnimation.value * _dragOffset
         : 0.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.s, vertical: AppSpacing.xs),
-      child: ClipRRect(
+    return ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.m),
         child: Stack(
           children: [
@@ -212,7 +210,6 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
             ),
           ],
         ),
-      ),
     );
   }
 }

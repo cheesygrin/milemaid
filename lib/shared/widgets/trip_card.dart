@@ -31,6 +31,15 @@ class TripCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final muted = scheme.onSurfaceVariant;
+    const distanceStyle = TextStyle(
+      fontSize: 28,
+      fontWeight: FontWeight.w700,
+      height: 1.0,
+      letterSpacing: -0.6,
+      fontFeatures: [FontFeature.tabularFigures()],
+    );
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -78,7 +87,7 @@ class TripCard extends StatelessWidget {
                   const Spacer(),
                   Text(
                     DateHelpers.formatDate(trip.startTime),
-                    style: const TextStyle(color: AppColors.textTertiary, fontSize: 13),
+                    style: TextStyle(color: muted, fontSize: 13),
                   ),
                 ],
               ),
@@ -86,36 +95,45 @@ class TripCard extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    trip.formattedDistance,
-                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w700, height: 1.0),
-                  ),
+                  Text(trip.formattedDistance, style: distanceStyle),
                   const SizedBox(width: 8),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 4),
                     child: Text(
                       '• ${trip.formattedDuration}',
-                      style: const TextStyle(fontSize: 15, color: AppColors.textSecondary),
+                      style: TextStyle(fontSize: 15, color: muted),
                     ),
                   ),
                   const Spacer(),
                   if (trip.vehicleId != null)
-                    const Icon(Icons.directions_car_filled, size: 18, color: AppColors.textTertiary),
+                    Icon(Icons.directions_car_filled, size: 18, color: muted),
                 ],
               ),
               const SizedBox(height: 6),
               Text(
                 '${DateHelpers.formatTime(trip.startTime)} → ${DateHelpers.formatTime(trip.endTime)}',
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: muted),
               ),
-              const SizedBox(height: 2),
-              // One-line From → To; long labels ellipsize so the card never
-              // grows taller than before.
-              Text(
-                '${placeLabel(trip.startLocationId, trip.startAddress, placesById)} → ${placeLabel(trip.endLocationId, trip.endAddress, placesById)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 13, color: AppColors.textTertiary),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _Endpoint(
+                      label: 'From',
+                      value: shortPlaceLabel(trip.startLocationId, trip.startAddress, placesById),
+                      color: muted,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _Endpoint(
+                      label: 'To',
+                      value: shortPlaceLabel(trip.endLocationId, trip.endAddress, placesById),
+                      color: muted,
+                    ),
+                  ),
+                ],
               ),
               if (trip.purpose != null && trip.purpose!.isNotEmpty) ...[
                 const SizedBox(height: 8),
@@ -126,27 +144,37 @@ class TripCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
                 ),
               ],
-              const SizedBox(height: 10),
-              // Mini route visual (simplified polyline representation)
-              Container(
-                height: 3,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(2),
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.accent.withValues(alpha: 0.7),
-                      AppColors.primary.withValues(alpha: 0.5),
-                      AppColors.mapRouteFast.withValues(alpha: 0.6),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
             ),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _Endpoint extends StatelessWidget {
+  const _Endpoint({required this.label, required this.value, required this.color});
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: TextStyle(fontSize: 11, color: color)),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
+      ],
     );
   }
 }

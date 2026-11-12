@@ -169,7 +169,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Depot → 200 Oak Ave, Shelby'), findsOneWidget);
+      expect(find.text('From'), findsOneWidget);
+      expect(find.text('To'), findsOneWidget);
+      expect(find.text('Depot'), findsOneWidget);
+      expect(find.text('Oak Ave'), findsOneWidget);
     });
 
     testWidgets('a long label ellipsizes on one line', (tester) async {
@@ -190,11 +193,11 @@ void main() {
         ),
       );
 
-      final fromToText = tester.widget<Text>(
-        find.text('Depot → $longAddress'),
+      final toText = tester.widget<Text>(
+        find.text('Very Long Boulevard North East West'),
       );
-      expect(fromToText.maxLines, 1);
-      expect(fromToText.overflow, TextOverflow.ellipsis);
+      expect(toText.maxLines, 1);
+      expect(toText.overflow, TextOverflow.ellipsis);
     });
   });
 }

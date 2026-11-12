@@ -5,14 +5,14 @@ import 'package:milemaid/core/models/trip.dart';
 class AppColors {
   AppColors._();
 
-  // Primary brand
-  static const Color primary = Color(0xFF0066FF);
-  static const Color primaryDark = Color(0xFF004ACC);
-  static const Color primaryLight = Color(0xFF4D94FF);
+  // Primary brand: deep indigo. Green is reserved for Business.
+  static const Color primary = Color(0xFF3A4FBF);
+  static const Color primaryDark = Color(0xFF2C3C96);
+  static const Color primaryLight = Color(0xFF7A8AD4);
 
-  // Accent / success (Business miles)
-  static const Color accent = Color(0xFF00C853);
-  static const Color accentDark = Color(0xFF009E40);
+  // Accent / success (Business miles only). Desaturated from pure green.
+  static const Color accent = Color(0xFF1FA85A);
+  static const Color accentDark = Color(0xFF178248);
 
   // Semantic
   static const Color personal = Color(0xFF7C4DFF);
@@ -35,7 +35,7 @@ class AppColors {
 
   // UI - Dark (for future dark theme)
   static const Color darkBackground = Color(0xFF0F1114);
-  static const Color darkSurface = Color(0xFF1C1F26);
+  static const Color darkSurface = Color(0xFF22262E);
   static const Color darkSurfaceVariant = Color(0xFF2A2D35);
   static const Color darkSurfaceElevated = Color(0xFF252930);
   static const Color darkTextPrimary = Color(0xFFF1F3F7);
@@ -44,7 +44,7 @@ class AppColors {
   static const Color darkDivider = Color(0xFF2F333B);
 
   // Status / feedback
-  static const Color success = Color(0xFF00C853);
+  static const Color success = Color(0xFF1FA85A);
   static const Color warning = Color(0xFFFFB300);
   static const Color error = Color(0xFFE53935);
 

@@ -87,15 +87,11 @@ class PaywallScreen extends ConsumerWidget {
   }
 
   void _subscribe(WidgetRef ref, BuildContext context, {bool pro = false, bool premium = false}) {
-    // For now this is a dev shortcut. Replace with real IAP flow.
-    ref.read(settingsProvider.notifier).setProStatus(true);
+    // v1 has no StoreKit products. This screen is not linked while
+    // AppConfig.monetizationEnabled is false, and it must never unlock Pro.
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Thank you! Pro features unlocked (dev simulation). '
-            'Replace this with real in_app_purchase + RevenueCat in production.'),
-      ),
+      const SnackBar(content: Text('Subscriptions are not available in this version.')),
     );
-    Navigator.pop(context);
   }
 }
 

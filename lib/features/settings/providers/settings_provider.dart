@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:milemaid/core/models/category_label.dart';
 import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/user_settings.dart';
 import 'package:milemaid/core/models/vehicle.dart';
 import 'package:milemaid/core/models/work_hours.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'settings_provider.g.dart';
@@ -77,18 +80,21 @@ class Vehicles extends _$Vehicles {
 
   Future<Vehicle> addVehicle(Vehicle v) async {
     final saved = await _db.saveVehicle(v);
+    unawaited(TripSyncService.instance.upsertVehicle(saved));
     state = _db.getAllVehicles();
     return saved;
   }
 
   Future<Vehicle> updateVehicle(Vehicle v) async {
     final saved = await _db.saveVehicle(v);
+    unawaited(TripSyncService.instance.upsertVehicle(saved));
     state = _db.getAllVehicles();
     return saved;
   }
 
   Future<void> deleteVehicle(String id) async {
     await _db.deleteVehicle(id);
+    unawaited(TripSyncService.instance.removeVehicle(id));
     state = _db.getAllVehicles();
   }
 }

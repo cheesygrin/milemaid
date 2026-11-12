@@ -18,6 +18,19 @@ class AppTheme {
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.background,
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(color: Colors.white, fontFamily: 'Inter'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.m)),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+        labelTextStyle: WidgetStateProperty.all(
+          AppTypography.labelMedium.copyWith(fontFamily: 'Inter'),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
@@ -67,7 +80,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(AppRadius.l))),
       ),
       dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
-      textTheme: base.textTheme.copyWith(
+      textTheme: base.textTheme.apply(fontFamily: 'Inter').copyWith(
         displayLarge: AppTypography.displayLarge.copyWith(color: AppColors.textPrimary),
         displayMedium: AppTypography.displayMedium.copyWith(color: AppColors.textPrimary),
         headlineLarge: AppTypography.headlineLarge.copyWith(color: AppColors.textPrimary),
@@ -94,9 +107,24 @@ class AppTheme {
         primary: AppColors.primaryLight,
         secondary: AppColors.accent,
         surface: AppColors.darkSurface,
+        onSurface: AppColors.darkTextPrimary,
+        onSurfaceVariant: AppColors.darkTextSecondary,
         error: AppColors.error,
       ),
       scaffoldBackgroundColor: AppColors.darkBackground,
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: AppColors.darkSurfaceElevated,
+        contentTextStyle: AppTypography.bodyMedium.copyWith(color: AppColors.darkTextPrimary, fontFamily: 'Inter'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.m)),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.darkSurface,
+        indicatorColor: AppColors.primaryLight.withValues(alpha: 0.18),
+        labelTextStyle: WidgetStateProperty.all(
+          AppTypography.labelMedium.copyWith(fontFamily: 'Inter', color: AppColors.darkTextSecondary),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.darkSurface,
         foregroundColor: AppColors.darkTextPrimary,
@@ -106,8 +134,11 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: AppColors.darkSurface,
-        elevation: AppElevation.low,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.l)),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.l),
+          side: const BorderSide(color: AppColors.darkDivider),
+        ),
         margin: const EdgeInsets.symmetric(horizontal: AppSpacing.m, vertical: AppSpacing.s),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -146,7 +177,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(AppRadius.l))),
       ),
       dividerTheme: DividerThemeData(color: AppColors.darkDivider, thickness: 1),
-      textTheme: base.textTheme.copyWith(
+      textTheme: base.textTheme.apply(fontFamily: 'Inter').copyWith(
         displayLarge: AppTypography.displayLarge.copyWith(color: AppColors.darkTextPrimary),
         displayMedium: AppTypography.displayMedium.copyWith(color: AppColors.darkTextPrimary),
         headlineLarge: AppTypography.headlineLarge.copyWith(color: AppColors.darkTextPrimary),

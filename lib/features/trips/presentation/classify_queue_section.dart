@@ -2,126 +2,50 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
-import 'package:milemaid/core/constants/app_strings.dart';
-import 'package:milemaid/core/models/named_location.dart';
-import 'package:milemaid/core/models/trip.dart';
-import 'package:milemaid/core/services/database_service.dart';
-import 'package:milemaid/core/services/place_matcher.dart';
-import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
-import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/features/trips/providers/unconfirmed_trips_provider.dart';
-import 'package:milemaid/shared/widgets/swipeable_trip_card.dart';
 
-/// Current named places keyed by id, for the From/To labels on trip cards.
-Map<String, NamedLocation> get _placesById =>
-    locationsById(DatabaseService().getAllLocations());
-
-/// Review queue for drives that need classification (shown on dashboard).
+/// One-line entry to the review deck. The cards themselves live on `/review`.
 class ClassifyQueueSection extends ConsumerWidget {
-  const ClassifyQueueSection({super.key, this.maxVisible = 5});
-
-  final int maxVisible;
+  const ClassifyQueueSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pending = ref.watch(unconfirmedTripsProvider);
     if (pending.isEmpty) return const SizedBox.shrink();
 
-    final visible = pending.take(maxVisible).toList();
-    final remaining = pending.length - visible.length;
+    final scheme = Theme.of(context).colorScheme;
+    final count = pending.length;
+    final label = count == 1 ? '1 drive to review' : '$count drives to review';
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      AppStrings.classifyDrives,
-                      style: Theme.of(context).textTheme.titleMedium,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Material(
+        color: AppColors.warning.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => context.push('/review'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                const Icon(Icons.swipe, color: AppColors.warning, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onSurface,
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      AppStrings.classifySwipeHint,
-                      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${pending.length}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.warning,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        ...visible.map((trip) => SwipeableTripCard(
-              trip: trip,
-              showMap: true,
-              onTap: () => context.push('/trips/${trip.id}'),
-              onClassified: (cat) =>
-                  _onClassified(context, ref, trip.id, cat, trip.category),
-              placesById: _placesById,
-            )),
-        if (remaining > 0)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextButton(
-              onPressed: () => context.go('/trips?review=1'),
-              child: Text(AppStrings.classifySeeMore(remaining)),
+                Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+              ],
             ),
           ),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-
-  Future<void> _onClassified(
-    BuildContext context,
-    WidgetRef ref,
-    String tripId,
-    TripCategory category,
-    TripCategory previousCategory,
-  ) async {
-    await ref.read(tripsProvider.notifier).classifyTrip(tripId, category);
-    ref.read(dashboardProvider.notifier).refresh();
-    if (!context.mounted) return;
-    final label = category == TripCategory.business ? AppStrings.business : AppStrings.personal;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(AppStrings.classifiedAs(label)),
-          duration: const Duration(seconds: 1),
-          action: SnackBarAction(
-            label: AppStrings.undo,
-            onPressed: () => _undoClassification(ref, tripId, previousCategory),
-          ),
         ),
-      );
-  }
-
-  Future<void> _undoClassification(
-    WidgetRef ref,
-    String tripId,
-    TripCategory previousCategory,
-  ) async {
-    await ref.read(tripsProvider.notifier).unclassifyTrip(tripId, previousCategory);
-    ref.read(dashboardProvider.notifier).refresh();
+      ),
+    );
   }
 }

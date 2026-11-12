@@ -16,7 +16,6 @@ import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/sample_data_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
-import 'package:milemaid/features/settings/presentation/backup_section.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -71,11 +70,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onTap: () => context.push('/login'),
                 );
               }
-              return ListTile(
-                leading: const Icon(Icons.cloud_done_outlined),
-                title: Text('Signed in as ${user.email ?? 'Google account'}'),
-                subtitle: const Text('Tap to sign out'),
-                onTap: () => AuthService.instance.signOut(),
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.cloud_done_outlined),
+                    title: Text('Signed in as ${user.email ?? 'your account'}'),
+                    subtitle: const Text('Tap to sign out'),
+                    onTap: () => AuthService.instance.signOut(),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.person_remove_outlined, color: Colors.red),
+                    title: const Text('Delete account', style: TextStyle(color: Colors.red)),
+                    subtitle: const Text('Removes your sign-in and the cloud copy of your data'),
+                    onTap: () => _deleteAccount(context),
+                  ),
+                ],
               );
             },
           ),
@@ -225,8 +235,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => _confirmDeleteAll(context, ref),
           ),
 
-          BackupSection(),
-
           const _SectionHeader('Legal & Privacy'),
           ListTile(
             leading: const Icon(Icons.policy),
@@ -238,11 +246,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 title: const Text('Privacy & Legal'),
                 content: const SingleChildScrollView(
                   child: Text(
-                    'MileMaid stores all trip data locally on your device using secure on-device storage.\n\n'
-                    'We do not sell or share your location or trip data with third parties.\n\n'
-                    'IMPORTANT: MileMaid is a record-keeping tool only. It is not tax advice or a substitute for professional accounting services. '
-                    'You are solely responsible for the accuracy of any reports you generate and submit. Always consult a qualified tax professional.\n\n'
-                    'By using this app you agree that the developers are not liable for any tax-related outcomes.',
+                    'MileMaid records your drives so you can build mileage reports.\n\n'
+                    'Location stays on this iPhone until you sign in. If you sign in with Apple, Google, or email, your trips, saved places, vehicles, and trip purposes are saved to your account so you can restore them on another phone. That links your email address to your trip history.\n\n'
+                    'If you turn on “Record addresses,” start and end coordinates are sent to OpenStreetMap to look up a street address.\n\n'
+                    'We do not sell your data, and we do not use it to track you across other companies’ apps or websites.\n\n'
+                    'You can export your data, delete it from this phone, or delete your account (which removes the cloud copy) from Settings.\n\n'
+                    'MileMaid is a record-keeping tool, not tax advice. You are responsible for the accuracy of any report you submit.',
                   ),
                 ),
                 actions: [
@@ -406,6 +415,42 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ScaffoldMessenger.of(ctx).showSnackBar(
         SnackBar(content: Text('Added $count sample trips. Check the home screen.')),
       );
+    }
+  }
+
+  Future<void> _deleteAccount(BuildContext ctx) async {
+    final ok = await showDialog<bool>(
+      context: ctx,
+      builder: (c) => AlertDialog(
+        title: const Text('Delete your account?'),
+        content: const Text(
+          'This permanently deletes your sign-in and the cloud copy of your drives, '
+          'saved places, vehicles, and trip purposes. '
+          'What is stored on this iPhone stays here until you use Delete All Data.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Delete account', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !ctx.mounted) return;
+    try {
+      await AuthService.instance.deleteAccount();
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(content: Text('Account deleted.')),
+        );
+      }
+    } catch (e) {
+      if (ctx.mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          SnackBar(content: Text(AuthService.friendlyMessage(e))),
+        );
+      }
     }
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:milemaid/core/constants/irs_rates.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/constants/app_strings.dart';
@@ -12,6 +13,8 @@ import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
+import 'package:milemaid/shared/widgets/empty_state.dart';
+import 'package:milemaid/shared/widgets/fade_slide_in.dart';
 import 'package:milemaid/shared/widgets/live_trip_card.dart';
 import 'package:milemaid/shared/widgets/stat_card.dart';
 import 'package:milemaid/features/trips/presentation/classify_queue_section.dart';
@@ -65,191 +68,220 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
     final dash = ref.watch(dashboardProvider);
     final active = _tracking.activeTripNotifier.value;
 
+    final scheme = Theme.of(context).colorScheme;
+    final weekday = DateFormat('EEEEE');
+    final today = DateTime.now();
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(AppStrings.appName),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.description_outlined),
-            tooltip: AppStrings.reports,
-            onPressed: () => context.push('/reports'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => context.push('/settings'),
-          ),
-        ],
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.read(dashboardProvider.notifier).refresh();
-          ref.read(tripsProvider.notifier).refresh(); // from trips
+          ref.read(tripsProvider.notifier).refresh();
         },
         child: Stack(
           children: [
-            ListView(
-              padding: const EdgeInsets.only(bottom: 120),
-              children: [
-                // New drives to review come first: swipe right = Business, left = Personal.
-                const ClassifyQueueSection(),
-
-                // Hero business miles - premium gradient + count-up
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSpacing.m, AppSpacing.m, AppSpacing.m, AppSpacing.s),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: AppGradients.primaryAccent,
-                      borderRadius: BorderRadius.circular(AppRadius.l),
+            CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  expandedHeight: 112,
+                  actions: [
+                    IconButton(
+                      icon: const Icon(Icons.add),
+                      tooltip: 'Add manual trip',
+                      onPressed: () => context.push('/add-manual'),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.l),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppStrings.businessMilesThisMonth,
-                            style: AppTypography.labelMedium.copyWith(color: Colors.white70),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          AnimatedBuilder(
-                            animation: _milesAnimation,
-                            builder: (context, _) {
-                              final animatedValue = dash.businessMilesThisMonth * _milesAnimation.value;
-                              return Text(
-                                '${animatedValue.toStringAsFixed(1)} mi',
-                                style: AppTypography.displayMedium.copyWith(
-                                  color: Colors.white,
-                                  height: 1.0,
-                                ),
-                              );
-                            },
-                          ),
-                          const SizedBox(height: AppSpacing.xxs),
-                          Text(
-                            '${AppStrings.deductionEstimate}: \$${_format(dash.deductionEstimate)} at ${IrsRates.format(dash.currentRate)}/mi',
-                            style: AppTypography.labelMedium.copyWith(color: Colors.white70),
-                          ),
-                        ],
+                  ],
+                  flexibleSpace: FlexibleSpaceBar(
+                    titlePadding: const EdgeInsetsDirectional.only(start: 16, bottom: 14),
+                    expandedTitleScale: 1.35,
+                    title: Text(
+                      AppStrings.appName,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurface,
                       ),
                     ),
                   ),
                 ),
-
-                // Three stat cards
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: StatCard(
-                          title: AppStrings.totalMiles,
-                          value: dash.totalMiles.toStringAsFixed(1),
-                          subtitle: 'all time',
-                          onTap: () => context.push('/trips'),
-                        ),
-                      ),
-                      Expanded(
-                        child: StatCard(
-                          title: AppStrings.personalMiles,
-                          value: dash.personalMiles.toStringAsFixed(1),
-                          accentColor: AppColors.personal,
-                          onTap: () => context.push('/trips?category=personal'),
-                        ),
-                      ),
-                      Expanded(
-                        child: StatCard(
-                          title: AppStrings.tripsLogged,
-                          value: '${dash.tripsLogged}',
-                          icon: Icons.list_alt,
-                          onTap: () => context.push('/trips'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-
-                // 7-day chart
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                  child: Text('Last 7 Days', style: Theme.of(context).textTheme.titleMedium),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: SizedBox(
-                    height: 160,
-                    child: LineChart(
-                      LineChartData(
-                        gridData: const FlGridData(show: false),
-                        titlesData: FlTitlesData(
-                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, _) {
-                                const days = ['7d', '6d', '5d', '4d', '3d', '2d', 'Today'];
-                                final i = value.toInt().clamp(0, 6);
-                                return Text(days[i], style: const TextStyle(fontSize: 10));
-                              },
-                            ),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        lineBarsData: [
-                          LineChartBarData(
-                            spots: dash.last7DaysMiles
-                                .asMap()
-                                .entries
-                                .map((e) => FlSpot(e.key.toDouble(), e.value))
-                                .toList(),
-                            isCurved: true,
+                SliverList(
+                  delegate: SliverChildListDelegate([
+                    const FadeSlideIn(index: 0, child: ClassifyQueueSection()),
+                    FadeSlideIn(
+                      index: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(AppSpacing.m, AppSpacing.m, AppSpacing.m, AppSpacing.s),
+                        child: Container(
+                          decoration: BoxDecoration(
                             color: AppColors.primary,
-                            barWidth: 3,
-                            dotData: const FlDotData(show: false),
-                            belowBarData: BarAreaData(
-                              show: true,
-                              color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(AppRadius.l),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.l),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppStrings.businessMilesThisMonth,
+                                  style: AppTypography.labelMedium.copyWith(color: Colors.white70),
+                                ),
+                                const SizedBox(height: AppSpacing.xs),
+                                AnimatedBuilder(
+                                  animation: _milesAnimation,
+                                  builder: (context, _) {
+                                    final animatedValue = dash.businessMilesThisMonth * _milesAnimation.value;
+                                    return Text(
+                                      '${animatedValue.toStringAsFixed(1)} mi',
+                                      style: AppTypography.displayMedium.copyWith(
+                                        color: Colors.white,
+                                        height: 1.0,
+                                        letterSpacing: -1.4,
+                                        fontFeatures: const [FontFeature.tabularFigures()],
+                                      ),
+                                    );
+                                  },
+                                ),
+                                const SizedBox(height: AppSpacing.xxs),
+                                Text(
+                                  '${AppStrings.deductionEstimate}: \$${_format(dash.deductionEstimate)} at ${IrsRates.format(dash.currentRate)}/mi',
+                                  style: AppTypography.labelMedium.copyWith(color: Colors.white70),
+                                ),
+                              ],
                             ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    FadeSlideIn(
+                      index: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: StatCard(
+                                title: AppStrings.totalMiles,
+                                value: dash.totalMiles.toStringAsFixed(1),
+                                subtitle: 'mi, all time',
+                                onTap: () => context.go('/trips'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: StatCard(
+                                title: AppStrings.personalMiles,
+                                value: dash.personalMiles.toStringAsFixed(1),
+                                subtitle: 'mi',
+                                accentColor: AppColors.personal,
+                                onTap: () => context.go('/trips?category=personal'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: StatCard(
+                                title: AppStrings.tripsLogged,
+                                value: '${dash.tripsLogged}',
+                                subtitle: 'drives',
+                                icon: Icons.route_outlined,
+                                emphasizeValue: false,
+                                onTap: () => context.go('/trips'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                      child: Text('Last 7 Days', style: Theme.of(context).textTheme.titleMedium),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: SizedBox(
+                        height: 160,
+                        child: LineChart(
+                          LineChartData(
+                            minY: 0,
+                            gridData: FlGridData(
+                              show: true,
+                              drawVerticalLine: false,
+                              checkToShowHorizontalLine: (value) => value == 0,
+                              getDrawingHorizontalLine: (_) => FlLine(
+                                color: scheme.outlineVariant.withValues(alpha: 0.6),
+                                strokeWidth: 1,
+                              ),
+                            ),
+                            titlesData: FlTitlesData(
+                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              bottomTitles: AxisTitles(
+                                sideTitles: SideTitles(
+                                  showTitles: true,
+                                  getTitlesWidget: (value, _) {
+                                    final i = value.toInt().clamp(0, 6);
+                                    final day = today.subtract(Duration(days: 6 - i));
+                                    return Text(
+                                      weekday.format(day),
+                                      style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            borderData: FlBorderData(show: false),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: dash.last7DaysMiles
+                                    .asMap()
+                                    .entries
+                                    .map((e) => FlSpot(e.key.toDouble(), e.value))
+                                    .toList(),
+                                isCurved: true,
+                                color: AppColors.primary,
+                                barWidth: 3,
+                                dotData: const FlDotData(show: false),
+                                belowBarData: BarAreaData(
+                                  show: true,
+                                  color: AppColors.primary.withValues(alpha: 0.12),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text('Recent Activity', style: Theme.of(context).textTheme.titleMedium),
+                          TextButton(
+                            onPressed: () => context.go('/trips'),
+                            child: const Text('See all'),
                           ),
                         ],
                       ),
                     ),
-                  ),
+                    if (dash.recentTrips.isEmpty)
+                      const EmptyState(
+                        icon: Icons.directions_car_outlined,
+                        title: 'No trips yet',
+                        subtitle: 'Drives you take will show up here.',
+                      )
+                    else
+                      ...dash.recentTrips.map((t) => TripCard(
+                            trip: t,
+                            onTap: () => context.push('/trips/${t.id}'),
+                            placesById: _placesById,
+                          )),
+                    const SizedBox(height: 24),
+                  ]),
                 ),
-
-                // Recent activity
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('Recent Activity', style: Theme.of(context).textTheme.titleMedium),
-                      TextButton(
-                        onPressed: () => context.go('/trips'),
-                        child: const Text('See all'),
-                      ),
-                    ],
-                  ),
-                ),
-                if (dash.recentTrips.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Text('No trips logged yet. Start driving!', style: TextStyle(color: AppColors.textSecondary)),
-                  )
-                else
-                  ...dash.recentTrips.map((t) => TripCard(
-                        trip: t,
-                        onTap: () => context.push('/trips/${t.id}'),
-                        placesById: _placesById,
-                      )),
-
-                const SizedBox(height: 40),
               ],
             ),
-
-            // Live floating / bottom card
             if (active != null)
               Positioned(
                 left: 0,
@@ -266,11 +298,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
               ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/add-manual'),
-        icon: const Icon(Icons.add),
-        label: const Text('Add Manual Trip'),
       ),
     );
   }

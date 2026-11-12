@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,7 @@ import 'package:milemaid/core/models/trip_expense.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/place_matcher.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
@@ -353,6 +356,7 @@ class _TripDetailScreenState extends ConsumerState<TripDetailScreen> {
       createdAt: DateTime.now(),
     );
     await DatabaseService().saveLocation(place);
+    unawaited(TripSyncService.instance.upsertPlace(place));
     final changed = await TripEnricher.instance.rematchAll();
     await ref.read(tripsProvider.notifier).refresh();
     _refreshTripObject();

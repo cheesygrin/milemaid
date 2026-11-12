@@ -14,7 +14,7 @@ class AppStrings {
       'One-tap professional PDF reports with full trip history, perfect for your accountant or taxes.';
   static const String onboardingTitle3 = 'Privacy first';
   static const String onboardingSubtitle3 =
-      'Everything is stored locally on your device. No cloud. No tracking. Export or delete anytime.';
+      'Drives stay on this iPhone until you sign in. Signing in backs them up to your account. We never sell your data.';
   static const String onboardingTitle4 = 'You\'re all set!';
   static const String onboardingSubtitle4 =
       'Grant location permissions and we\'ll start tracking your miles safely and accurately.';

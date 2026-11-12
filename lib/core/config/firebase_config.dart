@@ -8,5 +8,5 @@ final FirebaseOptions kFirebaseOptions = FirebaseOptions(
   appId: const String.fromEnvironment('FIREBASE_APP_ID'),
   messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID'),
   projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID'),
-  iosBundleId: 'com.timrose.milemaid',
+  iosBundleId: 'com.zerodelta.milemaid',
 );

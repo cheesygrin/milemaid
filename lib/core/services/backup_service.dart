@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -10,6 +11,7 @@ import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/vehicle.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/drive_backup_store.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 
 /// Thrown by [BackupService.mergeSnapshot] for files that are not a MileMaid
 /// backup snapshot, with a message meant to be shown to the user.
@@ -93,6 +95,9 @@ class BackupService {
       if (id == null || db.hasTrip(id)) continue;
       await db.saveTrip(Trip.fromJson(raw));
       tripsAdded++;
+    }
+    if (tripsAdded > 0) {
+      unawaited(TripSyncService.instance.pushAllLocal());
     }
     for (final raw in _listOfMaps(snapshot['vehicles'])) {
       final id = raw['id'] as String?;

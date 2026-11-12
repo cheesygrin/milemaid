@@ -45,6 +45,22 @@ String placeLabel(
   return 'Unknown place';
 }
 
+/// Card label: a place name, or just the street (no house number, city, or ZIP).
+String shortPlaceLabel(
+  String? locationId,
+  String? address,
+  Map<String, NamedLocation> placesById,
+) {
+  if (locationId != null && placesById[locationId] != null) {
+    return placesById[locationId]!.name;
+  }
+  final trimmed = address?.trim() ?? '';
+  if (trimmed.isEmpty) return 'Unknown place';
+  final street = trimmed.split(',').first.trim();
+  final withoutNumber = street.replaceFirst(RegExp(r'^\d+\s+'), '');
+  return withoutNumber.isEmpty ? street : withoutNumber;
+}
+
 /// Convenience lookup map for [placeLabel].
 Map<String, NamedLocation> locationsById(List<NamedLocation> places) => {
       for (final p in places) p.id: p,

@@ -103,7 +103,7 @@ class AppConfig {
    - Create a new file at `assets/privacy_policy.md` (or `docs/privacy_policy.md`) containing a clear, professional privacy policy tailored to this app.
      Key points it must cover (use professional language):
      - We collect precise location only while the app is actively tracking drives (with user consent).
-     - Location data is stored locally on the device (using Hive) and is never sent to our servers.
+     - Location stays on the device until the user signs in. Signing in saves trips to the user's Firebase account (linked to their email). Address lookup, when enabled, sends coordinates to OpenStreetMap.
      - We do not sell or share personal data with third parties.
      - Data is only used for generating local mileage reports for the user's own tax/accounting purposes.
      - User can export or delete all data at any time.

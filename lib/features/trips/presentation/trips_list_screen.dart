@@ -73,6 +73,13 @@ class _TripsListScreenState extends ConsumerState<TripsListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_reviewOnly ? AppStrings.classifyFilter : AppStrings.trips),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Add manual trip',
+            onPressed: () => context.push('/add-manual'),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Padding(
@@ -216,7 +223,7 @@ class _TripsListScreenState extends ConsumerState<TripsListScreen> {
       ..showSnackBar(
         SnackBar(
           content: Text(AppStrings.classifiedAs(label)),
-          duration: const Duration(seconds: 1),
+          duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: AppStrings.undo,
             onPressed: () => _undoClassification(tripId, previousCategory),

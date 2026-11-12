@@ -45,6 +45,7 @@ class AppTypography {
   AppTypography._();
 
   static const TextStyle displayLarge = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 57,
     fontWeight: FontWeight.w700,
     letterSpacing: -1.5,
@@ -52,6 +53,7 @@ class AppTypography {
   );
 
   static const TextStyle displayMedium = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 45,
     fontWeight: FontWeight.w700,
     letterSpacing: -1.0,
@@ -59,54 +61,63 @@ class AppTypography {
   );
 
   static const TextStyle headlineLarge = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 32,
     fontWeight: FontWeight.w700,
     height: 1.2,
   );
 
   static const TextStyle headlineMedium = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 28,
     fontWeight: FontWeight.w600,
     height: 1.25,
   );
 
   static const TextStyle titleLarge = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 22,
     fontWeight: FontWeight.w700,
     height: 1.3,
   );
 
   static const TextStyle titleMedium = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 17,
     fontWeight: FontWeight.w600,
     height: 1.35,
   );
 
   static const TextStyle titleSmall = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 15,
     fontWeight: FontWeight.w600,
     height: 1.4,
   );
 
   static const TextStyle bodyLarge = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 16,
     fontWeight: FontWeight.w400,
     height: 1.5,
   );
 
   static const TextStyle bodyMedium = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 14,
     fontWeight: FontWeight.w400,
     height: 1.5,
   );
 
   static const TextStyle labelLarge = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 14,
     fontWeight: FontWeight.w600,
     height: 1.4,
   );
 
   static const TextStyle labelMedium = TextStyle(
+    fontFamily: 'Inter',
     fontSize: 12,
     fontWeight: FontWeight.w500,
     height: 1.4,
@@ -117,10 +128,11 @@ class AppTypography {
 class AppGradients {
   AppGradients._();
 
+  /// Same-hue lift for the monthly summary. Not a second brand color.
   static const LinearGradient primaryAccent = LinearGradient(
-    colors: [Color(0xFF0066FF), Color(0xFF00C853)],
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
+    colors: [Color(0xFF4458C4), Color(0xFF3A4FBF)],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
   );
 
   static const LinearGradient subtleMap = LinearGradient(

@@ -46,12 +46,23 @@ class DatabaseService {
     await _seedDefaultsIfNeeded();
   }
 
+  /// Starter data every fresh install gets. Cloud sync uses these to tell an
+  /// untouched default apart from something the user created.
+  static const String defaultVehicleName = 'Primary Vehicle';
+  static const String defaultVehicleMakeModel = 'Your Car';
+  static const List<(String, TripCategory)> defaultPurposes = [
+    ('Client visit', TripCategory.business),
+    ('Supplies run', TripCategory.business),
+    ('Meeting', TripCategory.business),
+    ('Errand', TripCategory.personal),
+  ];
+
   Future<void> _seedDefaultsIfNeeded() async {
     if (_vehicles.isEmpty) {
       final v = Vehicle(
         id: const Uuid().v4(),
-        name: 'Primary Vehicle',
-        makeModel: 'Your Car',
+        name: defaultVehicleName,
+        makeModel: defaultVehicleMakeModel,
         year: DateTime.now().year,
         color: 'Silver',
       );
@@ -68,13 +79,14 @@ class DatabaseService {
   /// Generic starter purposes; Tim adds his own on the phone. Seeded only
   /// when the box is empty.
   Future<void> _seedDefaultPurposes() async {
-    final defaults = <PurposePreset>[
-      PurposePreset(id: const Uuid().v4(), name: 'Client visit', category: TripCategory.business, sortOrder: 0),
-      PurposePreset(id: const Uuid().v4(), name: 'Supplies run', category: TripCategory.business, sortOrder: 1),
-      PurposePreset(id: const Uuid().v4(), name: 'Meeting', category: TripCategory.business, sortOrder: 2),
-      PurposePreset(id: const Uuid().v4(), name: 'Errand', category: TripCategory.personal, sortOrder: 3),
-    ];
-    for (final p in defaults) {
+    for (var i = 0; i < defaultPurposes.length; i++) {
+      final (name, category) = defaultPurposes[i];
+      final p = PurposePreset(
+        id: const Uuid().v4(),
+        name: name,
+        category: category,
+        sortOrder: i,
+      );
       await _purposes.put(p.id, jsonEncode(p.toJson()));
     }
   }

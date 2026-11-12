@@ -1,7 +1,13 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:milemaid/core/config/backup_config.dart';
 import 'package:milemaid/core/services/google_sign_in_bootstrap.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 /// Thin wrapper over FirebaseAuth for the app's login flows: Google Sign-In
 /// and email/password. Emits no user-facing strings; the UI maps error codes.
@@ -45,6 +51,52 @@ class AuthService {
     }
   }
 
+  /// Native Sign in with Apple, exchanged for a Firebase credential.
+  /// Apple only returns the name on the first authorization.
+  Future<UserCredential> signInWithApple() async {
+    final rawNonce = _randomNonce();
+    try {
+      final apple = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: _sha256(rawNonce),
+      );
+      final idToken = apple.identityToken;
+      if (idToken == null) {
+        throw const AuthException('apple-failed', 'Apple sign-in did not complete.');
+      }
+      final credential = OAuthProvider('apple.com').credential(
+        idToken: idToken,
+        rawNonce: rawNonce,
+        accessToken: apple.authorizationCode,
+      );
+      final result = await _auth.signInWithCredential(credential);
+      final name = [
+        apple.givenName,
+        apple.familyName,
+      ].whereType<String>().where((part) => part.isNotEmpty).join(' ');
+      final current = result.user?.displayName;
+      if (name.isNotEmpty && (current == null || current.isEmpty)) {
+        await result.user?.updateDisplayName(name);
+      }
+      return result;
+    } on FirebaseAuthException {
+      rethrow;
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        throw const AuthException('canceled', 'Sign-in canceled.');
+      }
+      throw const AuthException('apple-failed', 'Apple sign-in did not complete.');
+    } catch (_) {
+      throw const AuthException('apple-failed', 'Could not sign in with Apple.');
+    }
+  }
+
+  Future<void> sendPasswordReset(String email) =>
+      _auth.sendPasswordResetEmail(email: email.trim());
+
   Future<UserCredential> signUpWithEmail(String email, String password) =>
       _auth.createUserWithEmailAndPassword(email: email, password: password);
 
@@ -52,8 +104,44 @@ class AuthService {
       _auth.signInWithEmailAndPassword(email: email, password: password);
 
   Future<void> signOut() async {
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {}
     await _auth.signOut();
   }
+
+  /// Deletes the Firebase account and that account's cloud trips.
+  /// Trips stored only on this phone are left in place.
+  Future<void> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw const AuthException('no-user', 'No account is signed in.');
+    }
+    await TripSyncService.instance.deleteCloudData();
+    try {
+      await user.delete();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'requires-recent-login') {
+        throw const AuthException(
+          'requires-recent-login',
+          'For your security, sign out, sign in again, then delete the account.',
+        );
+      }
+      rethrow;
+    }
+    await signOut();
+  }
+
+  static String _randomNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  static String _sha256(String input) =>
+      sha256.convert(utf8.encode(input)).toString();
 
   /// Maps a FirebaseAuthException to a short, user-readable message.
   static String friendlyMessage(Object error) {
@@ -81,7 +169,7 @@ class AuthService {
         case 'operation-not-allowed':
           return 'That sign-in method is not enabled yet.';
         default:
-          return 'Sign-in failed. Please try again.';
+          return 'Sign-in failed (${error.code}). Please try again.';
       }
     }
     return 'Something went wrong. Please try again.';

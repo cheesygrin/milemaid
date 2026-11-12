@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
 import 'package:milemaid/core/services/auth_service.dart';
 import 'package:milemaid/core/services/trip_sync_service.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 
 /// Login screen: Google Sign-In plus email/password (sign in or create
@@ -41,8 +43,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Restore trips previously backed up to this account.
       var restored = 0;
       try {
-        restored = await TripSyncService.instance.pullAndMerge();
+        restored = await TripSyncService.instance.syncOnSignIn();
         ref.read(tripsProvider.notifier).refresh();
+        ref.invalidate(vehiclesProvider);
       } catch (_) {}
       if (!mounted) return;
       final msg = restored > 0
@@ -50,6 +53,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           : (email == null ? 'Signed in' : 'Signed in as $email');
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       if (context.canPop()) context.pop();
+    } catch (e) {
+      if (e is AuthException && e.code == 'canceled') return;
+      if (mounted) setState(() => _error = AuthService.friendlyMessage(e));
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _resetPassword() async {
+    final email = _emailCtrl.text.trim();
+    if (!email.contains('@')) {
+      setState(() => _error = 'Enter your email above, then tap Forgot password.');
+      return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await AuthService.instance.sendPasswordReset(email);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Password reset email sent.')),
+      );
     } catch (e) {
       if (mounted) setState(() => _error = AuthService.friendlyMessage(e));
     } finally {
@@ -91,6 +118,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 24),
 
+              SignInWithAppleButton(
+                onPressed: _busy ? null : () => _run(service.signInWithApple),
+                height: 52,
+                style: Theme.of(context).brightness == Brightness.dark
+                    ? SignInWithAppleButtonStyle.white
+                    : SignInWithAppleButtonStyle.black,
+                borderRadius: const BorderRadius.all(Radius.circular(12)),
+              ),
+              const SizedBox(height: 12),
               if (service.googleConfigured) ...[
                 OutlinedButton.icon(
                   onPressed: _busy ? null : () => _run(service.signInWithGoogle),
@@ -132,7 +168,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   border: OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _busy ? null : _resetPassword,
+                  child: const Text('Forgot password?'),
+                ),
+              ),
 
               if (_error != null) ...[
                 Text(

@@ -144,6 +144,24 @@ void main() {
     });
   });
 
+  group('shortPlaceLabel', () {
+    test('keeps a matched place name', () {
+      final byId = {'p1': _place(id: 'p1', name: 'Depot')};
+      expect(shortPlaceLabel('p1', '7229 US-19 S, New Port Richey, FL', byId), 'Depot');
+    });
+
+    test('drops the house number, city, and ZIP', () {
+      expect(
+        shortPlaceLabel(null, '7229 US-19 S, New Port Richey, FL 34652', const {}),
+        'US-19 S',
+      );
+    });
+
+    test('keeps a street that has no house number', () {
+      expect(shortPlaceLabel(null, 'Main Street, Springfield', const {}), 'Main Street');
+    });
+  });
+
   group('TripEnricher.enrich', () {
     test('a named place wins and uses its stored address', () async {
       final place = _place(

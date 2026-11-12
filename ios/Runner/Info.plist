@@ -31,8 +31,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -91,9 +89,9 @@
 	<key>GMSApiKey</key>
 	<string>$(GOOGLE_MAPS_IOS_API_KEY)</string>
 
-	<!-- Google Sign-In (Drive backup): client ID comes from Secrets.xcconfig. -->
+	<!-- Google Sign-In: client ID comes from Secrets.xcconfig. -->
 	<!-- All values are empty in the public repo; the app builds and runs fine -->
-	<!-- with them unset (backup features then report "not configured"). -->
+	<!-- with them unset (Google sign-in is then unavailable). -->
 	<key>GIDClientID</key>
 	<string>$(GOOGLE_IOS_CLIENT_ID)</string>
 	<key>CFBundleURLTypes</key>

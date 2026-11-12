@@ -5,6 +5,7 @@ import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/address_lookup.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 
 /// Fills in addresses and named-place ids on trips.
 ///
@@ -117,6 +118,7 @@ class TripEnricher {
       final enriched = await enrich(trip);
       if (enrichmentChanged(trip, enriched)) {
         await db.saveTrip(enriched);
+        unawaited(TripSyncService.instance.upsert(enriched));
         count++;
       }
       if (i < targets.length - 1) {
@@ -165,6 +167,7 @@ class TripEnricher {
         updated = updated.copyWith(endAddress: end!.address);
       }
       await db.saveTrip(updated);
+      unawaited(TripSyncService.instance.upsert(updated));
       changed++;
     }
     return changed;

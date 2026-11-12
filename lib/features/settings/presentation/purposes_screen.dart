@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:milemaid/core/models/purpose_preset.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:milemaid/shared/widgets/empty_state.dart';
 import 'package:uuid/uuid.dart';
 
@@ -36,7 +39,9 @@ class _PurposesScreenState extends ConsumerState<PurposesScreen> {
     presets.insert(newIndex, moved);
     for (var i = 0; i < presets.length; i++) {
       if (presets[i].sortOrder != i) {
-        await DatabaseService().savePurpose(presets[i].copyWith(sortOrder: i));
+        final reordered = presets[i].copyWith(sortOrder: i);
+        await DatabaseService().savePurpose(reordered);
+        unawaited(TripSyncService.instance.upsertPurpose(reordered));
       }
     }
     _reload();
@@ -59,6 +64,7 @@ class _PurposesScreenState extends ConsumerState<PurposesScreen> {
     );
     if (ok != true) return;
     await DatabaseService().deletePurpose(preset.id);
+    unawaited(TripSyncService.instance.removePurpose(preset.id));
     _reload();
   }
 
@@ -119,6 +125,7 @@ class _PurposesScreenState extends ConsumerState<PurposesScreen> {
       sortOrder: existing?.sortOrder ?? _presets.length,
     );
     await DatabaseService().savePurpose(preset);
+    unawaited(TripSyncService.instance.upsertPurpose(preset));
     _reload();
   }
 

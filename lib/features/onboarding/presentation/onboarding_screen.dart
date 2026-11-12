@@ -8,7 +8,9 @@ import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_sync_service.dart';
+import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -114,13 +116,36 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     try {
       await AuthService.instance.signInWithGoogle();
       try {
-        await TripSyncService.instance.pullAndMerge();
+        await TripSyncService.instance.syncOnSignIn();
         ref.read(tripsProvider.notifier).refresh();
+        ref.invalidate(vehiclesProvider);
       } catch (_) {}
       await _finishOnboarding();
     } catch (e) {
       if (mounted) {
         setState(() => _busyAuth = false);
+        if (e is AuthException && e.code == 'canceled') return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AuthService.friendlyMessage(e))),
+        );
+      }
+    }
+  }
+
+  Future<void> _appleSignIn() async {
+    setState(() => _busyAuth = true);
+    try {
+      await AuthService.instance.signInWithApple();
+      try {
+        await TripSyncService.instance.syncOnSignIn();
+        ref.read(tripsProvider.notifier).refresh();
+        ref.invalidate(vehiclesProvider);
+      } catch (_) {}
+      await _finishOnboarding();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _busyAuth = false);
+        if (e is AuthException && e.code == 'canceled') return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(AuthService.friendlyMessage(e))),
         );
@@ -162,6 +187,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  SignInWithAppleButton(
+                    onPressed: _busyAuth ? null : _appleSignIn,
+                    height: 48,
+                    style: Theme.of(context).brightness == Brightness.dark
+                        ? SignInWithAppleButtonStyle.white
+                        : SignInWithAppleButtonStyle.black,
+                    borderRadius: const BorderRadius.all(Radius.circular(12)),
+                  ),
+                  const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: _busyAuth ? null : _googleSignIn,
                     icon: const Icon(Icons.g_mobiledata, size: 26),

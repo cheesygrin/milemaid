@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
@@ -5,6 +7,7 @@ import 'package:milemaid/core/models/named_location.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/shared/widgets/empty_state.dart';
 
@@ -61,6 +64,7 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
 
   Future<void> _delete(NamedLocation place) async {
     await DatabaseService().deleteLocation(place.id);
+    unawaited(TripSyncService.instance.removePlace(place.id));
     await _afterChange();
   }
 
@@ -197,6 +201,7 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
       createdAt: existing.createdAt,
     );
     await DatabaseService().saveLocation(place);
+    unawaited(TripSyncService.instance.upsertPlace(place));
     await _afterChange();
   }
 }

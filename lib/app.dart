@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/models/trip.dart';
-import 'package:milemaid/core/services/backup_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
@@ -24,40 +23,142 @@ import 'package:milemaid/features/settings/presentation/vehicles_screen.dart';
 import 'package:milemaid/features/settings/presentation/purposes_screen.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/presentation/add_manual_trip_screen.dart';
+import 'package:milemaid/features/trips/presentation/review_deck_screen.dart';
 import 'package:milemaid/features/trips/presentation/trip_detail_screen.dart';
 import 'package:milemaid/features/trips/presentation/trips_list_screen.dart';
 import 'package:milemaid/shared/theme/app_theme.dart';
 
+TripCategory? _categoryQuery(GoRouterState state) {
+  final q = state.uri.queryParameters['category'];
+  for (final c in TripCategory.values) {
+    if (c.name == q) return c;
+  }
+  return null;
+}
+
 final _router = GoRouter(
   initialLocation: '/',
+  redirect: (context, state) {
+    final done = DatabaseService().getSettings().hasCompletedOnboarding;
+    final path = state.uri.path;
+    final signingIn = path == '/onboarding' || path == '/login';
+    if (!done && !signingIn) return '/onboarding';
+    if (done && path == '/onboarding') return '/';
+    return null;
+  },
   routes: [
-    GoRoute(
-      path: '/',
-      builder: (context, state) => const _RootDecider(),
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return Scaffold(
+          body: navigationShell,
+          bottomNavigationBar: NavigationBar(
+            selectedIndex: navigationShell.currentIndex,
+            onDestinationSelected: navigationShell.goBranch,
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.route_outlined),
+                selectedIcon: Icon(Icons.route),
+                label: 'Trips',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.bar_chart_outlined),
+                selectedIcon: Icon(Icons.bar_chart),
+                label: 'Reports',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.settings_outlined),
+                selectedIcon: Icon(Icons.settings),
+                label: 'Settings',
+              ),
+            ],
+          ),
+        );
+      },
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/',
+              builder: (context, state) => const DashboardScreen(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/trips',
+              builder: (context, state) => TripsListScreen(
+                reviewOnly: state.uri.queryParameters['review'] == '1',
+                initialCategory: _categoryQuery(state),
+              ),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) =>
+                      TripDetailScreen(tripId: state.pathParameters['id']!),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/reports',
+              builder: (context, state) => const ReportsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'pdf-preview',
+                  builder: (context, state) => const PdfPreviewScreen(),
+                ),
+              ],
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/settings',
+              builder: (context, state) => const SettingsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'vehicles',
+                  builder: (context, state) => const VehiclesScreen(),
+                ),
+                GoRoute(
+                  path: 'auto-classify',
+                  builder: (context, state) => const AutoClassifyScreen(),
+                ),
+                GoRoute(
+                  path: 'custom-categories',
+                  builder: (context, state) => const CustomCategoriesScreen(),
+                ),
+                GoRoute(
+                  path: 'places',
+                  builder: (context, state) => const PlacesScreen(),
+                ),
+                GoRoute(
+                  path: 'purposes',
+                  builder: (context, state) => const PurposesScreen(),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
     ),
     GoRoute(
       path: '/onboarding',
       builder: (context, state) => const OnboardingScreen(),
     ),
     GoRoute(
-      path: '/trips',
-      builder: (context, state) {
-        final q = state.uri.queryParameters['category'];
-        TripCategory? cat;
-        for (final c in TripCategory.values) {
-          if (c.name == q) cat = c;
-        }
-        return TripsListScreen(
-          reviewOnly: state.uri.queryParameters['review'] == '1',
-          initialCategory: cat,
-        );
-      },
-      routes: [
-        GoRoute(
-          path: ':id',
-          builder: (context, state) => TripDetailScreen(tripId: state.pathParameters['id']!),
-        ),
-      ],
+      path: '/review',
+      builder: (context, state) => const ReviewDeckScreen(),
     ),
     GoRoute(
       path: '/add-manual',
@@ -68,65 +169,11 @@ final _router = GoRouter(
       builder: (context, state) => const LoginScreen(),
     ),
     GoRoute(
-      path: '/reports',
-      builder: (context, state) => const ReportsScreen(),
-      routes: [
-        GoRoute(
-          path: 'pdf-preview',
-          builder: (context, state) => const PdfPreviewScreen(),
-        ),
-      ],
-    ),
-    GoRoute(
-      path: '/settings',
-      builder: (context, state) => const SettingsScreen(),
-      routes: [
-        GoRoute(
-          path: 'vehicles',
-          builder: (context, state) => const VehiclesScreen(),
-        ),
-        GoRoute(
-          path: 'auto-classify',
-          builder: (context, state) => const AutoClassifyScreen(),
-        ),
-        GoRoute(
-          path: 'custom-categories',
-          builder: (context, state) => const CustomCategoriesScreen(),
-        ),
-        GoRoute(
-          path: 'places',
-          builder: (context, state) => const PlacesScreen(),
-        ),
-        GoRoute(
-          path: 'purposes',
-          builder: (context, state) => const PurposesScreen(),
-        ),
-      ],
-    ),
-    GoRoute(
       path: '/upgrade',
       builder: (context, state) => const PaywallScreen(),
     ),
   ],
 );
-
-/// Decides whether to show onboarding or the main dashboard.
-class _RootDecider extends ConsumerWidget {
-  const _RootDecider();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = DatabaseService().getSettings();
-    if (!settings.hasCompletedOnboarding) {
-      // Use post frame to avoid build during build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) context.go('/onboarding');
-      });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-    return const DashboardScreen();
-  }
-}
 
 class MileMaidApp extends ConsumerWidget {
   const MileMaidApp({super.key});
@@ -226,8 +273,6 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _resumeTrackingIfNeeded();
-      // Rate-limited inside the service; failures recorded, never thrown.
-      unawaited(BackupService.instance.autoBackup(afterNewTrip: false));
       // Close a drive that ended while the app wasn't getting GPS fixes.
       TrackingService().checkForEndedTrip();
       // Fill in missing addresses in the background (one pass at a time).
