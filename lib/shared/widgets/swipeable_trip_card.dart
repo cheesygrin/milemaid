@@ -17,12 +17,17 @@ class SwipeableTripCard extends StatefulWidget {
     required this.onClassified,
     this.enableSwipe = true,
     this.showMap = false,
+    this.collapseOnExit = false,
     this.placesById = const {},
   });
 
   final Trip trip;
   /// Show the route map preview at the top of the card (review queue).
   final bool showMap;
+
+  /// Shrink this card's slot while it leaves, so a column of cards below
+  /// slides up with the swipe instead of jumping after it.
+  final bool collapseOnExit;
   final VoidCallback onTap;
   final void Function(TripCategory category) onClassified;
   final bool enableSwipe;
@@ -53,10 +58,15 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
     super.initState();
     _exitController = AnimationController(
       vsync: this,
-      duration: AppDurations.normal,
+      duration: widget.collapseOnExit
+          ? const Duration(milliseconds: 420)
+          : AppDurations.normal,
     );
     _exitSlide = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _exitController, curve: Curves.easeIn),
+      CurvedAnimation(
+        parent: _exitController,
+        curve: widget.collapseOnExit ? Curves.easeInOut : Curves.easeIn,
+      ),
     );
 
     _springController = AnimationController(
@@ -147,7 +157,7 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
         ? _springAnimation.value * _dragOffset
         : 0.0;
 
-    return ClipRRect(
+    final card = ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.m),
         child: Stack(
           children: [
@@ -178,7 +188,8 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
             AnimatedBuilder(
               animation: Listenable.merge([_exitSlide, _springController]),
               builder: (context, child) {
-                final exitExtra = _isExiting ? _exitSlide.value * 80 * (_dragOffset.sign) : 0;
+                final travel = widget.collapseOnExit ? MediaQuery.sizeOf(context).width : 80.0;
+                final exitExtra = _isExiting ? _exitSlide.value * travel * _dragOffset.sign : 0.0;
                 final currentOffset = _dragOffset + exitExtra - springOffset;
                 return Transform.translate(
                   offset: Offset(currentOffset, 0),
@@ -210,6 +221,23 @@ class _SwipeableTripCardState extends State<SwipeableTripCard>
             ),
           ],
         ),
+    );
+
+    if (!widget.collapseOnExit) return card;
+
+    return AnimatedBuilder(
+      animation: _exitSlide,
+      builder: (context, child) {
+        final factor = _isExiting ? (1 - _exitSlide.value) : 1.0;
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: factor.clamp(0.0, 1.0),
+            child: child,
+          ),
+        );
+      },
+      child: card,
     );
   }
 }

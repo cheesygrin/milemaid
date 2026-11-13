@@ -12,13 +12,14 @@ import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/features/trips/providers/unconfirmed_trips_provider.dart';
 import 'package:milemaid/shared/widgets/empty_state.dart';
 import 'package:milemaid/shared/widgets/fade_slide_in.dart';
+import 'package:milemaid/shared/widgets/route_preview.dart';
 import 'package:milemaid/shared/widgets/swipeable_trip_card.dart';
 import 'package:milemaid/shared/widgets/trip_card.dart';
 
 Map<String, NamedLocation> get _placesById =>
     locationsById(DatabaseService().getAllLocations());
 
-/// One drive at a time, with the next card peeking behind it.
+/// The unreviewed drives, in a column. Swipe the top card and the rest shift up.
 class ReviewDeckScreen extends ConsumerWidget {
   const ReviewDeckScreen({super.key});
 
@@ -116,41 +117,36 @@ class _Deck extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final front = trips.first;
-    final next = trips.length > 1 ? trips[1] : null;
     final places = _placesById;
 
-    return Stack(
-      alignment: Alignment.topCenter,
-      children: [
-        if (next != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 18),
-            child: Transform.scale(
-              scale: 0.94,
-              alignment: Alignment.topCenter,
-              child: Opacity(
-                opacity: 0.55,
-                child: IgnorePointer(
-                  child: TripCard(
-                    trip: next,
-                    placesById: places,
-                    showNeedsReview: true,
-                    onTap: () {},
-                  ),
-                ),
-              ),
-            ),
-          ),
-        SwipeableTripCard(
-          key: ValueKey(front.id),
-          trip: front,
-          showMap: true,
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 88),
+      itemCount: trips.length,
+      itemBuilder: (context, index) {
+        final trip = trips[index];
+        if (index == 0) {
+          return SwipeableTripCard(
+            key: ValueKey(trip.id),
+            trip: trip,
+            showMap: true,
+            collapseOnExit: true,
+            placesById: places,
+            onTap: () => context.push('/trips/${trip.id}'),
+            onClassified: (category) => onClassified(trip, category),
+          );
+        }
+        return TripCard(
+          key: ValueKey(trip.id),
+          trip: trip,
           placesById: places,
-          onTap: () => context.push('/trips/${front.id}'),
-          onClassified: (category) => onClassified(front, category),
-        ),
-      ],
+          showNeedsReview: true,
+          header: RoutePreview(
+            cacheKey: '${trip.id}:${trip.routePoints.length}',
+            points: trip.routeLatLng,
+          ),
+          onTap: () => context.push('/trips/${trip.id}'),
+        );
+      },
     );
   }
 }
