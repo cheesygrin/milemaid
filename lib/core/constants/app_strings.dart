@@ -9,12 +9,12 @@ class AppStrings {
   static const String onboardingTitle1 = 'Drive. We track.';
   static const String onboardingSubtitle1 =
       'MileMaid automatically logs every drive in the background. No buttons. No hassle.';
-  static const String onboardingTitle2 = 'IRS-ready reports';
+  static const String onboardingTitle2 = 'See what your miles are worth';
   static const String onboardingSubtitle2 =
-      'One-tap professional PDF reports with full trip history, perfect for your accountant or taxes.';
-  static const String onboardingTitle3 = 'Privacy first';
+      'Swipe to classify each drive and watch your deduction estimate grow. Tax-ready PDF and CSV reports come with MileMaid Pro.';
+  static const String onboardingTitle3 = 'Private by default';
   static const String onboardingSubtitle3 =
-      'Drives stay on this iPhone until you sign in. Signing in backs them up to your account. We never sell your data.';
+      'Your drives stay on this iPhone. No account, no ads, and we never sell your data. MileMaid is open source, so anyone can check.';
   static const String onboardingTitle4 = 'You\'re all set!';
   static const String onboardingSubtitle4 =
       'Grant location permissions and we\'ll start tracking your miles safely and accurately.';
@@ -94,16 +94,35 @@ class AppStrings {
   static const String milesUnit = 'mi';
   static const String minutesUnit = 'min';
 
-  // Monetization / Pro
-  static const String pro = 'Pro';
-  static const String upgradeToPro = 'Upgrade to Pro';
-  static const String proUnlocks = 'Unlock unlimited exports, full professional PDFs, and more.';
-  static const String pricingMonthly = '\$4.99/month';
-  static const String pricingYearly = '\$49/year';
-  static const String pricingPremiumMonthly = '\$9/month';
-  static const String freePlan = 'Free plan';
-  static const String starterPlan = 'Starter (Free)';
-  static const String proPlan = 'Pro';
-  static const String premiumPlan = 'Premium';
-  static const String manageSubscription = 'Manage Subscription';
+  // MileMaid Pro. Prices are never written here: the paywall shows what the
+  // App Store returns.
+  static const String proName = 'MileMaid Pro';
+  static const String proHeadline = 'Tax-ready reports and private cloud sync';
+  static const String proSubhead =
+      'Tracking and classifying your drives is free for as long as you like. Pro adds the paperwork and the backup.';
+  static const List<(String, String)> proFeatures = [
+    (
+      'PDF mileage reports',
+      'A clean multi-page log with totals, your deduction estimate and every trip, ready for your accountant.',
+    ),
+    (
+      'CSV export',
+      'Every drive as a spreadsheet row for your own records or bookkeeping software.',
+    ),
+    (
+      'Cloud sync',
+      'Drives, places, vehicles and purposes saved to your account and restored on a new phone.',
+    ),
+  ];
+  static const String freeForever =
+      'Always free: unlimited automatic tracking, swipe to classify, full trip history and your running deduction estimate. '
+      'No account needed, no ads, and the code is open source.';
+  static const String subscriptionTerms =
+      'Payment is charged to your Apple ID when you confirm. The subscription renews automatically at the same price '
+      'unless it is cancelled at least 24 hours before the current period ends. Manage or cancel any time in your App Store account settings.';
+  static const String proActive = 'MileMaid Pro is active';
+  static const String proWelcome = 'MileMaid Pro is active. Reports and cloud sync are unlocked.';
+  static const String proRequiredForExports = 'PDF and CSV exports are part of MileMaid Pro.';
+  static const String proRequiredForSync = 'Cloud sync is part of MileMaid Pro.';
+  static const String manageSubscription = 'Manage subscription';
 }

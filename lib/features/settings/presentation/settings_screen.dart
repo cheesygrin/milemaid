@@ -17,9 +17,11 @@ import 'package:milemaid/core/services/sample_data_service.dart';
 import 'package:milemaid/core/services/tracking_health_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
+import 'package:milemaid/features/monetization/providers/pro_provider.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -62,24 +64,43 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           Consumer(
             builder: (context, ref, _) {
               final user = ref.watch(authStateProvider).value;
+              final isPro = ref.watch(proProvider);
               if (user == null) {
                 return ListTile(
-                  leading: const Icon(Icons.cloud_outlined),
+                  leading: Icon(isPro ? Icons.cloud_outlined : Icons.lock_outline),
                   title: const Text('Sign in'),
-                  subtitle: const Text('Back up your drives to the cloud'),
+                  subtitle: Text(
+                    isPro
+                        ? 'Back up your drives to the cloud'
+                        : 'Cloud sync needs MileMaid Pro',
+                  ),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/login'),
+                  onTap: () => context.push(isPro ? '/login' : '/upgrade'),
                 );
               }
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.cloud_done_outlined),
+                    leading: Icon(
+                      isPro ? Icons.cloud_done_outlined : Icons.cloud_off_outlined,
+                    ),
                     title: Text('Signed in as ${user.email ?? 'your account'}'),
-                    subtitle: const Text('Tap to sign out'),
+                    subtitle: Text(
+                      isPro
+                          ? 'Tap to sign out'
+                          : 'Cloud sync is paused without MileMaid Pro. Tap to sign out.',
+                    ),
                     onTap: () => AuthService.instance.signOut(),
                   ),
+                  if (!isPro)
+                    ListTile(
+                      leading: const Icon(Icons.workspace_premium_outlined),
+                      title: const Text('Get MileMaid Pro'),
+                      subtitle: const Text('Unlock reports and cloud sync'),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => context.push('/upgrade'),
+                    ),
                   ListTile(
                     leading: const Icon(Icons.person_remove_outlined, color: Colors.red),
                     title: const Text('Delete account', style: TextStyle(color: Colors.red)),
@@ -135,23 +156,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onTap: () => context.push('/reports'),
           ),
 
-          // Hidden until real StoreKit subscriptions exist (see AppConfig).
           if (AppConfig.monetizationEnabled) ...[
             const _SectionHeader('Subscription'),
             Consumer(
               builder: (context, ref, _) {
-                final settings = ref.watch(settingsProvider);
+                final isPro = ref.watch(proProvider);
                 return ListTile(
-                  leading: Icon(settings.isPro ? Icons.workspace_premium : Icons.lock),
-                  title: Text(settings.isPro ? 'Pro / Premium active' : 'Free plan'),
-                  subtitle: Text(settings.isPro
-                      ? 'Thank you for supporting MileMaid!'
-                      : 'Upgrade for unlimited exports and full professional reports'),
-                  trailing: settings.isPro
+                  leading: Icon(isPro ? Icons.verified : Icons.workspace_premium_outlined),
+                  title: Text(isPro ? AppStrings.proActive : 'Get MileMaid Pro'),
+                  subtitle: Text(
+                    isPro
+                        ? 'Reports and cloud sync are unlocked'
+                        : 'PDF/CSV reports and cloud sync',
+                  ),
+                  trailing: isPro
                       ? const Icon(Icons.check_circle, color: Colors.green)
                       : const Icon(Icons.chevron_right),
                   onTap: () {
-                    if (!settings.isPro) context.push('/upgrade');
+                    if (isPro) {
+                      launchUrl(
+                        Uri.parse(AppConfig.manageSubscriptionsUrl),
+                        mode: LaunchMode.externalApplication,
+                      );
+                    } else {
+                      context.push('/upgrade');
+                    }
                   },
                 );
               },

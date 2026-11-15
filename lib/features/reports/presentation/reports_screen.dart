@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:milemaid/core/config/app_config.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
+import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/constants/irs_rates.dart';
 import 'package:milemaid/core/services/export_service.dart';
+import 'package:milemaid/features/monetization/providers/pro_provider.dart';
 import 'package:milemaid/features/reports/providers/reports_provider.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 
@@ -106,12 +107,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
 
           const SizedBox(height: 16),
 
-          // Export buttons. Pro gating is disabled until real IAP exists
-          // (see AppConfig.monetizationEnabled) — v1 ships fully free.
+          // The summary above is free; taking the report out of the app is
+          // what MileMaid Pro sells.
           Consumer(
             builder: (context, ref, _) {
               final settings = ref.watch(settingsProvider);
-              final isPro = !AppConfig.monetizationEnabled || settings.isPro;
+              final isPro = ref.watch(proProvider);
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -122,7 +123,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         child: FilledButton.icon(
                           onPressed: () async {
                             if (!isPro) {
-                              _showUpgradeDialog(context);
+                              context.push('/upgrade');
                               return;
                             }
                             final svc = ExportService();
@@ -130,10 +131,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                               start: report.startDate,
                               end: report.endDate,
                               userName: settings.name.isNotEmpty ? settings.name : 'Mileage Log',
-                              isPro: isPro,
                             );
                           },
-                          icon: const Icon(Icons.picture_as_pdf),
+                          icon: Icon(isPro ? Icons.picture_as_pdf : Icons.lock_outline),
                           label: const Text('Export PDF'),
                         ),
                       ),
@@ -142,23 +142,28 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         child: OutlinedButton.icon(
                           onPressed: () async {
                             if (!isPro) {
-                              _showUpgradeDialog(context);
+                              context.push('/upgrade');
                               return;
                             }
                             final svc = ExportService();
                             await svc.exportCsv(report.startDate, report.endDate);
                           },
-                          icon: const Icon(Icons.table_chart),
+                          icon: Icon(isPro ? Icons.table_chart : Icons.lock_outline),
                           label: const Text('Export CSV'),
                         ),
                       ),
                     ],
                   ),
                   if (!isPro) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
+                    const Text(
+                      AppStrings.proRequiredForExports,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
                     TextButton(
-                      onPressed: () => _showUpgradeDialog(context),
-                      child: const Text('Upgrade to Pro for unlimited exports & full PDFs →'),
+                      onPressed: () => context.push('/upgrade'),
+                      child: const Text('See MileMaid Pro'),
                     ),
                   ],
                 ],
@@ -223,30 +228,4 @@ class _CategoryPie extends ConsumerWidget {
     ];
     return PieChart(PieChartData(sections: data, centerSpaceRadius: 40));
   }
-}
-
-void _showUpgradeDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Unlock Pro'),
-      content: const Text(
-        'Pro unlocks unlimited PDF & CSV exports, full professional reports without limits, and more vehicles.\n\n'
-        r'$4.99/month or $49/year. Cancel anytime.',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx),
-          child: const Text('Not now'),
-        ),
-        FilledButton(
-          onPressed: () {
-            Navigator.pop(ctx);
-            context.push('/upgrade');
-          },
-          child: const Text('View plans'),
-        ),
-      ],
-    ),
-  );
 }

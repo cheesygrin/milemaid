@@ -34,10 +34,6 @@ class UserSettings with _$UserSettings {
     /// Last time we synced or updated (for future)
     DateTime? lastUpdated,
 
-    /// Whether the user has an active Pro / Premium subscription.
-    /// For now this is local-only (unlocked via in-app purchase in a real release).
-    @Default(false) bool isPro,
-
     /// Theme preference: "system", "light", or "dark"
     @Default('system') String themeMode,
   }) = _UserSettings;
@@ -63,7 +59,6 @@ class UserSettings with _$UserSettings {
             .toList(),
         hasCompletedOnboarding: json['hasCompletedOnboarding'] as bool? ?? false,
         lastUpdated: json['lastUpdated'] != null ? DateTime.parse(json['lastUpdated'] as String) : null,
-        isPro: json['isPro'] as bool? ?? false,
         themeMode: json['themeMode'] as String? ?? 'system',
       );
 
@@ -81,7 +76,6 @@ class UserSettings with _$UserSettings {
         'customCategories': customCategories.map((e) => e.toJson()).toList(),
         'hasCompletedOnboarding': hasCompletedOnboarding,
         'lastUpdated': lastUpdated?.toIso8601String(),
-        'isPro': isPro,
         'themeMode': themeMode,
       };
 

@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/purchase_service.dart';
 import 'package:milemaid/core/services/tracking_health_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
+import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/trips/providers/trips_provider.dart';
 import 'package:milemaid/features/auth/presentation/login_screen.dart';
@@ -232,6 +234,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     TrackingService().pendingReviewTripId.addListener(_openPendingTrip);
     TrackingService().pendingClassifyTripId.addListener(_openPendingTrip);
     TrackingService().pendingWorkdayPrompt.addListener(_openWorkdayPrompt);
+    PurchaseService.instance.isPro.addListener(_syncWhenProStarts);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _resumeTrackingIfNeeded();
@@ -248,8 +251,20 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     TrackingService().pendingReviewTripId.removeListener(_openPendingTrip);
     TrackingService().pendingClassifyTripId.removeListener(_openPendingTrip);
     TrackingService().pendingWorkdayPrompt.removeListener(_openWorkdayPrompt);
+    PurchaseService.instance.isPro.removeListener(_syncWhenProStarts);
     DatabaseService().onTripsChanged = null;
     super.dispose();
+  }
+
+  /// When Pro begins (a purchase, a restore, or a renewal after a lapse) a
+  /// signed-in phone catches up with its account straight away.
+  Future<void> _syncWhenProStarts() async {
+    if (!TripSyncService.instance.available) return;
+    await TripSyncService.instance.syncOnSignIn();
+    if (!mounted) return;
+    ref.read(tripsProvider.notifier).refresh();
+    ref.read(dashboardProvider.notifier).refresh();
+    ref.invalidate(vehiclesProvider);
   }
 
   /// Handles a tapped drive notification: the notification itself goes to the
@@ -288,10 +303,15 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       _resumeTrackingIfNeeded();
       // Close a drive that ended while the app wasn't getting GPS fixes.
       TrackingService().checkForEndedTrip();
-      // Fill in missing addresses in the background (one pass at a time).
-      // Errors are swallowed here: a failed geocoder pass must never crash
-      // the app on resume; it just tries again next launch.
-      if (!_backfillRunning) {
+      // Pick up a renewal, expiry or refund since the app was last open.
+      unawaited(PurchaseService.instance.refreshEntitlement());
+      // Fill in missing addresses in the background (one pass at a time),
+      // only for people who turned on "Record addresses": the lookup sends
+      // trip endpoints to Apple. Errors are swallowed here: a failed geocoder
+      // pass must never crash the app on resume; it just tries again next
+      // launch.
+      if (!_backfillRunning &&
+          DatabaseService().getSettings().geocodingEnabled) {
         _backfillRunning = true;
         TripEnricher.instance
             .backfill()

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/constants/app_colors.dart';
+import 'package:milemaid/core/constants/app_strings.dart';
 import 'package:milemaid/core/services/auth_service.dart';
 import 'package:milemaid/core/services/trip_sync_service.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -40,17 +41,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await action();
       if (!mounted) return;
       final email = AuthService.instance.currentUser?.email;
-      // Restore trips previously backed up to this account.
+      // With MileMaid Pro, restore what this account has in the cloud.
+      final syncing = TripSyncService.instance.available;
       var restored = 0;
-      try {
-        restored = await TripSyncService.instance.syncOnSignIn();
-        ref.read(tripsProvider.notifier).refresh();
-        ref.invalidate(vehiclesProvider);
-      } catch (_) {}
+      if (syncing) {
+        try {
+          restored = await TripSyncService.instance.syncOnSignIn();
+          ref.read(tripsProvider.notifier).refresh();
+          ref.invalidate(vehiclesProvider);
+        } catch (_) {}
+      }
       if (!mounted) return;
-      final msg = restored > 0
-          ? 'Signed in as $email. Restored $restored drive(s).'
-          : (email == null ? 'Signed in' : 'Signed in as $email');
+      final who = email == null ? 'Signed in' : 'Signed in as $email';
+      final msg = !syncing
+          ? '$who. ${AppStrings.proRequiredForSync}'
+          : restored > 0
+              ? '$who. Restored $restored drive(s).'
+              : who;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       if (context.canPop()) context.pop();
     } catch (e) {
@@ -113,7 +120,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             children: [
               const SizedBox(height: 8),
               const Text(
-                'Back up your miles to the cloud so you never lose a drive again.',
+                'Sign in to sync your drives to your account with MileMaid Pro and restore them on a new phone.',
                 style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 24),

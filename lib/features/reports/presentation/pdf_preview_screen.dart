@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdf/pdf.dart';
 import 'package:printing/printing.dart';
-import 'package:milemaid/core/config/app_config.dart';
 import 'package:milemaid/core/services/export_service.dart';
+import 'package:milemaid/features/monetization/providers/pro_provider.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
 
 class PdfPreviewScreen extends StatelessWidget {
@@ -21,14 +21,21 @@ class PdfPreviewScreen extends StatelessWidget {
         builder: (context, ref, _) {
           final settings = ref.watch(settingsProvider);
           final userName = settings.name.isNotEmpty ? settings.name : 'Mileage Log';
-          final isPro = !AppConfig.monetizationEnabled || settings.isPro;
+          final isPro = ref.watch(proProvider);
+          // Without Pro this is a look at the layout only: the pages carry a
+          // preview banner and cannot be shared or printed from here.
           return PdfPreview(
             build: (format) async {
               final svc = ExportService();
-              final doc = await svc.buildPdfPreview(start, end, userName, isPro: isPro);
+              final doc = await svc.buildPdfPreview(start, end, userName, watermark: !isPro);
               return doc.save();
             },
             initialPageFormat: PdfPageFormat.letter,
+            allowSharing: isPro,
+            allowPrinting: isPro,
+            canChangePageFormat: false,
+            canChangeOrientation: false,
+            canDebug: false,
           );
         },
       ),

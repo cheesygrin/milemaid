@@ -1,5 +1,5 @@
 name: milemaid
-description: "MileMaid - Automatic mileage tracking and professional reports. Cheaper alternative to MileIQ with powerful background tracking."
+description: "MileMaid - Private, open-source automatic mileage tracking with tax-ready reports."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -54,8 +54,10 @@ dependencies:
   # Notifications
   flutter_local_notifications: ^18.0.1
 
-  # Monetization (in-app subscriptions for Pro/Premium)
+  # MileMaid Pro subscription (StoreKit 2 on iOS)
   in_app_purchase: ^3.2.0
+  in_app_purchase_storekit: ^0.4.0
+  url_launcher: ^6.3.0
 
   # Premium animations
   rive: ^0.13.12

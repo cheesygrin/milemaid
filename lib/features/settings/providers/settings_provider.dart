@@ -54,13 +54,6 @@ class Settings extends _$Settings {
     await update(updated);
   }
 
-  /// For development and early testing only. In production this will be driven by
-  /// successful in-app purchase / subscription validation (e.g. via RevenueCat).
-  Future<void> setProStatus(bool isPro) async {
-    final updated = state.copyWith(isPro: isPro);
-    await update(updated);
-  }
-
   Future<void> setThemeMode(String mode) async {
     final updated = state.copyWith(themeMode: mode);
     await update(updated);

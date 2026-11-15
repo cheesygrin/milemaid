@@ -47,10 +47,6 @@ mixin _$UserSettings {
   /// Last time we synced or updated (for future)
   DateTime? get lastUpdated => throw _privateConstructorUsedError;
 
-  /// Whether the user has an active Pro / Premium subscription.
-  /// For now this is local-only (unlocked via in-app purchase in a real release).
-  bool get isPro => throw _privateConstructorUsedError;
-
   /// Theme preference: "system", "light", or "dark"
   String get themeMode => throw _privateConstructorUsedError;
 
@@ -79,7 +75,6 @@ abstract class $UserSettingsCopyWith<$Res> {
       List<CategoryLabel> customCategories,
       bool hasCompletedOnboarding,
       DateTime? lastUpdated,
-      bool isPro,
       String themeMode});
 }
 
@@ -109,7 +104,6 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
     Object? customCategories = null,
     Object? hasCompletedOnboarding = null,
     Object? lastUpdated = freezed,
-    Object? isPro = null,
     Object? themeMode = null,
   }) {
     return _then(_value.copyWith(
@@ -165,10 +159,6 @@ class _$UserSettingsCopyWithImpl<$Res, $Val extends UserSettings>
           ? _value.lastUpdated
           : lastUpdated // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      isPro: null == isPro
-          ? _value.isPro
-          : isPro // ignore: cast_nullable_to_non_nullable
-              as bool,
       themeMode: null == themeMode
           ? _value.themeMode
           : themeMode // ignore: cast_nullable_to_non_nullable
@@ -199,7 +189,6 @@ abstract class _$$UserSettingsImplCopyWith<$Res>
       List<CategoryLabel> customCategories,
       bool hasCompletedOnboarding,
       DateTime? lastUpdated,
-      bool isPro,
       String themeMode});
 }
 
@@ -227,7 +216,6 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
     Object? customCategories = null,
     Object? hasCompletedOnboarding = null,
     Object? lastUpdated = freezed,
-    Object? isPro = null,
     Object? themeMode = null,
   }) {
     return _then(_$UserSettingsImpl(
@@ -283,10 +271,6 @@ class __$$UserSettingsImplCopyWithImpl<$Res>
           ? _value.lastUpdated
           : lastUpdated // ignore: cast_nullable_to_non_nullable
               as DateTime?,
-      isPro: null == isPro
-          ? _value.isPro
-          : isPro // ignore: cast_nullable_to_non_nullable
-              as bool,
       themeMode: null == themeMode
           ? _value.themeMode
           : themeMode // ignore: cast_nullable_to_non_nullable
@@ -312,7 +296,6 @@ class _$UserSettingsImpl extends _UserSettings {
       final List<CategoryLabel> customCategories = const [],
       this.hasCompletedOnboarding = false,
       this.lastUpdated,
-      this.isPro = false,
       this.themeMode = 'system'})
       : _workHours = workHours,
         _namedLocations = namedLocations,
@@ -396,12 +379,6 @@ class _$UserSettingsImpl extends _UserSettings {
   @override
   final DateTime? lastUpdated;
 
-  /// Whether the user has an active Pro / Premium subscription.
-  /// For now this is local-only (unlocked via in-app purchase in a real release).
-  @override
-  @JsonKey()
-  final bool isPro;
-
   /// Theme preference: "system", "light", or "dark"
   @override
   @JsonKey()
@@ -409,7 +386,7 @@ class _$UserSettingsImpl extends _UserSettings {
 
   @override
   String toString() {
-    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, geocodingEnabled: $geocodingEnabled, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, customCategories: $customCategories, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, isPro: $isPro, themeMode: $themeMode)';
+    return 'UserSettings(name: $name, email: $email, mileageRate: $mileageRate, trackingSensitivity: $trackingSensitivity, notificationsEnabled: $notificationsEnabled, tripEndConfirmation: $tripEndConfirmation, geocodingEnabled: $geocodingEnabled, defaultVehicleId: $defaultVehicleId, workHours: $workHours, namedLocations: $namedLocations, customCategories: $customCategories, hasCompletedOnboarding: $hasCompletedOnboarding, lastUpdated: $lastUpdated, themeMode: $themeMode)';
   }
 
   @override
@@ -441,7 +418,6 @@ class _$UserSettingsImpl extends _UserSettings {
                 other.hasCompletedOnboarding == hasCompletedOnboarding) &&
             (identical(other.lastUpdated, lastUpdated) ||
                 other.lastUpdated == lastUpdated) &&
-            (identical(other.isPro, isPro) || other.isPro == isPro) &&
             (identical(other.themeMode, themeMode) ||
                 other.themeMode == themeMode));
   }
@@ -462,7 +438,6 @@ class _$UserSettingsImpl extends _UserSettings {
       const DeepCollectionEquality().hash(_customCategories),
       hasCompletedOnboarding,
       lastUpdated,
-      isPro,
       themeMode);
 
   @JsonKey(ignore: true)
@@ -487,7 +462,6 @@ abstract class _UserSettings extends UserSettings {
       final List<CategoryLabel> customCategories,
       final bool hasCompletedOnboarding,
       final DateTime? lastUpdated,
-      final bool isPro,
       final String themeMode}) = _$UserSettingsImpl;
   const _UserSettings._() : super._();
 
@@ -532,11 +506,6 @@ abstract class _UserSettings extends UserSettings {
 
   /// Last time we synced or updated (for future)
   DateTime? get lastUpdated;
-  @override
-
-  /// Whether the user has an active Pro / Premium subscription.
-  /// For now this is local-only (unlocked via in-app purchase in a real release).
-  bool get isPro;
   @override
 
   /// Theme preference: "system", "light", or "dark"

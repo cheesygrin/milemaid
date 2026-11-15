@@ -5,6 +5,7 @@ import 'package:milemaid/core/models/purpose_preset.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/models/vehicle.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/purchase_service.dart';
 
 /// What one pull should change on this phone for a single collection.
 class MergePlan<T> {
@@ -50,6 +51,10 @@ MergePlan<T> planMerge<T>({
 /// up. On sign-in we pull-and-merge (add-only, never overwrite) so a fresh or
 /// wiped device is restored from the cloud. Sync is best-effort and never
 /// throws into the caller.
+///
+/// Sync is part of MileMaid Pro: without an active subscription every call
+/// here is a no-op and nothing leaves the phone. Deleting the cloud copy is
+/// the one exception, so anyone can always remove their data.
 class TripSyncService {
   TripSyncService._();
   static final TripSyncService instance = TripSyncService._();
@@ -71,9 +76,10 @@ class TripSyncService {
           .doc(user.uid)
           .collection(name);
 
+  /// True when this phone is syncing: signed in with MileMaid Pro active.
   bool get available => _currentUser != null;
 
-  User? get _currentUser {
+  User? get _signedInUser {
     try {
       return FirebaseAuth.instance.currentUser;
     } catch (_) {
@@ -81,6 +87,10 @@ class TripSyncService {
       return null;
     }
   }
+
+  /// The account to sync with, or null when sync is off.
+  User? get _currentUser =>
+      PurchaseService.proUnlocked ? _signedInUser : null;
 
   Future<void> _set(String collection, String id, Map<String, dynamic> json) async {
     final user = _currentUser;
@@ -155,7 +165,7 @@ class TripSyncService {
   /// Deletes everything the signed-in user has in the cloud. Used by account
   /// deletion.
   Future<void> deleteCloudData() async {
-    final user = _currentUser;
+    final user = _signedInUser;
     if (user == null) return;
     for (final name in _allCollections) {
       final ref = _ref(user, name);

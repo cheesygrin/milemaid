@@ -7,10 +7,6 @@ import 'package:milemaid/core/services/auth_service.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
-import 'package:milemaid/core/services/trip_sync_service.dart';
-import 'package:milemaid/features/settings/providers/settings_provider.dart';
-import 'package:milemaid/features/trips/providers/trips_provider.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
@@ -22,7 +18,6 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  bool _busyAuth = false;
 
   final List<_OnboardPage> _pages = const [
     _OnboardPage(
@@ -61,6 +56,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     final db = DatabaseService();
     final current = db.getSettings();
     await db.updateSettings(current.copyWith(hasCompletedOnboarding: true));
+
+    await TrackingService().requestNotificationPermission();
 
     if (access != LocationAccess.denied &&
         access != LocationAccess.servicesDisabled) {
@@ -102,57 +99,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return access;
   }
 
-  Future<void> _googleSignIn() async {
-    if (!AuthService.instance.googleConfigured) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Google sign-in is not configured yet. Use email instead.')),
-        );
-      }
-      return;
-    }
-    setState(() => _busyAuth = true);
-    try {
-      await AuthService.instance.signInWithGoogle();
-      try {
-        await TripSyncService.instance.syncOnSignIn();
-        ref.read(tripsProvider.notifier).refresh();
-        ref.invalidate(vehiclesProvider);
-      } catch (_) {}
-      await _finishOnboarding();
-    } catch (e) {
-      if (mounted) {
-        setState(() => _busyAuth = false);
-        if (e is AuthException && e.code == 'canceled') return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AuthService.friendlyMessage(e))),
-        );
-      }
-    }
-  }
-
-  Future<void> _appleSignIn() async {
-    setState(() => _busyAuth = true);
-    try {
-      await AuthService.instance.signInWithApple();
-      try {
-        await TripSyncService.instance.syncOnSignIn();
-        ref.read(tripsProvider.notifier).refresh();
-        ref.invalidate(vehiclesProvider);
-      } catch (_) {}
-      await _finishOnboarding();
-    } catch (e) {
-      if (mounted) {
-        setState(() => _busyAuth = false);
-        if (e is AuthException && e.code == 'canceled') return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(AuthService.friendlyMessage(e))),
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -182,34 +128,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 },
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SignInWithAppleButton(
-                    onPressed: _busyAuth ? null : _appleSignIn,
-                    height: 48,
-                    style: Theme.of(context).brightness == Brightness.dark
-                        ? SignInWithAppleButtonStyle.white
-                        : SignInWithAppleButtonStyle.black,
-                    borderRadius: const BorderRadius.all(Radius.circular(12)),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
-                    onPressed: _busyAuth ? null : _googleSignIn,
-                    icon: const Icon(Icons.g_mobiledata, size: 26),
-                    label: const Text('Continue with Google'),
-                    style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(48)),
-                  ),
-                  TextButton(
-                    onPressed: _busyAuth ? null : () => context.push('/login'),
-                    child: const Text('Sign in with email'),
-                  ),
-                ],
+            // No account is needed to track. This is only for someone who
+            // already syncs with MileMaid Pro and is setting up a new phone.
+            if (AuthService.available)
+              TextButton(
+                onPressed: () => context.push('/login'),
+                child: const Text('Already have an account? Sign in'),
               ),
-            ),
             Padding(
               padding: const EdgeInsets.all(24),
               child: Row(

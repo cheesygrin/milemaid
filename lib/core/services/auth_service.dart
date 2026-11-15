@@ -15,11 +15,16 @@ class AuthService {
   AuthService._();
   static final AuthService instance = AuthService._();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  /// True once Firebase has started. False in builds without Firebase
+  /// config, where every account entry point is hidden.
+  static bool available = false;
 
-  User? get currentUser => _auth.currentUser;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
 
-  Stream<User?> authChanges() => _auth.authStateChanges();
+  User? get currentUser => available ? _auth.currentUser : null;
+
+  Stream<User?> authChanges() =>
+      available ? _auth.authStateChanges() : const Stream<User?>.empty();
 
   /// True when this build has a Google OAuth client ID, so the Google button
   /// can be shown and used.
@@ -110,13 +115,35 @@ class AuthService {
     await _auth.signOut();
   }
 
-  /// Deletes the Firebase account and that account's cloud trips.
-  /// Trips stored only on this phone are left in place.
+  /// Deletes the cloud copy of the user's data, then the account itself.
+  /// Data stored only on this phone is left in place.
+  ///
+  /// Firebase refuses to delete an account whose sign-in is not recent, so
+  /// that is settled before anything is erased; otherwise the cloud data
+  /// would be gone and the account left behind. Apple accounts confirm with
+  /// the Apple sheet, which also yields the code that revokes MileMaid's
+  /// Sign in with Apple token (App Store Guideline 5.1.1(v)).
   Future<void> deleteAccount() async {
-    final user = _auth.currentUser;
+    final user = currentUser;
     if (user == null) {
       throw const AuthException('no-user', 'No account is signed in.');
     }
+
+    final usesApple = user.providerData.any((p) => p.providerId == 'apple.com');
+    if (usesApple) {
+      final authorizationCode = await _confirmWithApple(user);
+      try {
+        await _auth.revokeTokenWithAuthorizationCode(authorizationCode);
+      } catch (_) {
+        // Deleting the account matters more than the revocation call.
+      }
+    } else if (!_signedInRecently(user)) {
+      throw const AuthException(
+        'requires-recent-login',
+        'For your security, sign out, sign in again, then delete the account.',
+      );
+    }
+
     await TripSyncService.instance.deleteCloudData();
     try {
       await user.delete();
@@ -130,6 +157,44 @@ class AuthService {
       rethrow;
     }
     await signOut();
+  }
+
+  static bool _signedInRecently(User user) {
+    final last = user.metadata.lastSignInTime;
+    return last != null &&
+        DateTime.now().difference(last) < const Duration(minutes: 4);
+  }
+
+  /// Re-runs Sign in with Apple for the signed-in [user] and returns the
+  /// fresh authorization code.
+  Future<String> _confirmWithApple(User user) async {
+    const failed = AuthException(
+      'apple-failed',
+      'Could not confirm your Apple ID. Your account was not deleted.',
+    );
+    final rawNonce = _randomNonce();
+    final AuthorizationCredentialAppleID apple;
+    try {
+      apple = await SignInWithApple.getAppleIDCredential(
+        scopes: const [],
+        nonce: _sha256(rawNonce),
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        throw const AuthException('canceled', 'Account deletion canceled.');
+      }
+      throw failed;
+    }
+    final idToken = apple.identityToken;
+    if (idToken == null) throw failed;
+    await user.reauthenticateWithCredential(
+      OAuthProvider('apple.com').credential(
+        idToken: idToken,
+        rawNonce: rawNonce,
+        accessToken: apple.authorizationCode,
+      ),
+    );
+    return apple.authorizationCode;
   }
 
   static String _randomNonce([int length = 32]) {
@@ -166,6 +231,8 @@ class AuthService {
           return 'Network error. Check your connection and try again.';
         case 'account-exists-with-different-credential':
           return 'An account already exists with that email.';
+        case 'user-mismatch':
+          return 'That is a different account from the one signed in.';
         case 'operation-not-allowed':
           return 'That sign-in method is not enabled yet.';
         default:

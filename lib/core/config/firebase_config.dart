@@ -3,6 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 /// Firebase options from compile-time defines supplied by
 /// config/secrets.json (gitignored; see config/secrets.example.json). Keeping
 /// the real API key out of the repo, consistent with the OAuth client IDs.
+/// False in a build made without config/secrets.json. Firebase is then never
+/// started, and accounts and cloud sync stay hidden.
+const bool kFirebaseConfigured =
+    String.fromEnvironment('FIREBASE_API_KEY') != '' &&
+    String.fromEnvironment('FIREBASE_APP_ID') != '';
+
 final FirebaseOptions kFirebaseOptions = FirebaseOptions(
   apiKey: const String.fromEnvironment('FIREBASE_API_KEY'),
   appId: const String.fromEnvironment('FIREBASE_APP_ID'),
