@@ -7,6 +7,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:milemaid/app.dart';
 import 'package:milemaid/core/config/firebase_config.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/tracking_health_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 
 Future<void> main() async {
@@ -31,5 +32,7 @@ Future<void> main() async {
   // Resume tracking straight away when permission is already granted. This
   // also covers iOS relaunching the app in the background after a significant
   // location change, when no frame is drawn and widget callbacks never run.
-  unawaited(TrackingService().resumeIfAuthorized());
+  unawaited(TrackingService().resumeIfAuthorized().then((_) {
+    return TrackingHealthService.instance.checkAndAlert();
+  }));
 }

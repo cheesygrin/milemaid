@@ -18,6 +18,7 @@ import 'package:milemaid/shared/widgets/fade_slide_in.dart';
 import 'package:milemaid/shared/widgets/live_trip_card.dart';
 import 'package:milemaid/shared/widgets/stat_card.dart';
 import 'package:milemaid/features/trips/presentation/classify_queue_section.dart';
+import 'package:milemaid/features/trips/presentation/workday_prompt_banner.dart';
 import 'package:milemaid/shared/widgets/trip_card.dart';
 
 /// Current named places keyed by id, for the From/To labels on trip cards.
@@ -107,7 +108,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                 ),
                 SliverList(
                   delegate: SliverChildListDelegate([
-                    const FadeSlideIn(index: 0, child: ClassifyQueueSection()),
+                    const FadeSlideIn(index: 0, child: WorkdayPromptBanner()),
+                    const FadeSlideIn(index: 1, child: ClassifyQueueSection()),
                     FadeSlideIn(
                       index: 1,
                       child: Padding(

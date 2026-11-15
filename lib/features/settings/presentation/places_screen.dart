@@ -94,10 +94,17 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
                   confirmDismiss: (_) => _confirmDelete(place),
                   onDismissed: (_) => _delete(place),
                   child: ListTile(
-                    leading: const Icon(Icons.place_outlined),
+                    leading: Icon(
+                      place.isHome ? Icons.home_outlined : Icons.place_outlined,
+                      color: place.isHome ? AppColors.primary : null,
+                    ),
                     title: Text(place.name),
                     subtitle: Text(
-                      '${place.address ?? 'No address'} • ${place.radiusMeters.round()} m',
+                      [
+                        if (place.isHome) 'Home',
+                        place.address ?? 'No address',
+                        '${place.radiusMeters.round()} m',
+                      ].join(' • '),
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.delete_outline),
@@ -118,6 +125,7 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
     var radius = existing.radiusMeters.clamp(50, 500).toDouble();
     var defaultCategory = existing.defaultCategory;
     final purposeCtrl = TextEditingController(text: existing.defaultPurpose ?? '');
+    var isHome = existing.isHome;
     var nameError = false;
 
     final saved = await showDialog<bool>(
@@ -135,6 +143,15 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
                     labelText: 'Name',
                     errorText: nameError ? 'Name is required' : null,
                   ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('This is Home'),
+                  subtitle: const Text(
+                    'Leaving and returning here groups the day’s drives for one classify prompt.',
+                  ),
+                  value: isHome,
+                  onChanged: (v) => setDialogState(() => isHome = v),
                 ),
                 Text('Radius: ${radius.round()} m',
                     style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
@@ -189,6 +206,14 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
     // Built directly (not copyWith) so an emptied purpose text clears the
     // stored value; copyWith cannot set a field back to null.
     final purpose = purposeCtrl.text.trim();
+    final db = DatabaseService();
+    if (isHome) {
+      for (final other in db.getAllLocations()) {
+        if (other.id == existing.id || !other.isHome) continue;
+        await db.saveLocation(other.copyWith(isHome: false));
+        unawaited(TripSyncService.instance.upsertPlace(other.copyWith(isHome: false)));
+      }
+    }
     final place = NamedLocation(
       id: existing.id,
       name: nameCtrl.text.trim(),
@@ -198,9 +223,10 @@ class _PlacesScreenState extends ConsumerState<PlacesScreen> {
       address: existing.address,
       defaultCategory: defaultCategory,
       defaultPurpose: purpose.isEmpty ? null : purpose,
+      isHome: isHome,
       createdAt: existing.createdAt,
     );
-    await DatabaseService().saveLocation(place);
+    await db.saveLocation(place);
     unawaited(TripSyncService.instance.upsertPlace(place));
     await _afterChange();
   }

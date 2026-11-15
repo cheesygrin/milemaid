@@ -14,6 +14,7 @@ import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/features/auth/providers/auth_provider.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/sample_data_service.dart';
+import 'package:milemaid/core/services/tracking_health_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
 import 'package:milemaid/features/settings/providers/settings_provider.dart';
@@ -187,8 +188,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             onChanged: (v) => ref.read(settingsProvider.notifier).toggleNotifications(v),
           ),
           SwitchListTile(
+            title: const Text('Alert on quiet weekends too'),
+            subtitle: const Text(
+              'Off by default: two weekdays with no drives triggers a tracking alert. Turn on if you drive Saturdays or Sundays.',
+            ),
+            value: TrackingHealthService.instance.readPrefs().countWeekends,
+            onChanged: (v) async {
+              await TrackingHealthService.instance.setCountWeekends(v);
+              setState(() {});
+            },
+          ),
+          SwitchListTile(
             title: const Text('Record addresses'),
-            subtitle: const Text('Resolve trip start/end addresses via an online service (OpenStreetMap)'),
+            subtitle: const Text(
+              'Look up street addresses for where drives start and end. Uses the device geocoder.',
+            ),
             value: settings.geocodingEnabled,
             onChanged: (v) => ref.read(settingsProvider.notifier).setGeocodingEnabled(v),
           ),

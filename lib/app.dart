@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:milemaid/core/models/trip.dart';
 import 'package:milemaid/core/services/database_service.dart';
+import 'package:milemaid/core/services/tracking_health_service.dart';
 import 'package:milemaid/core/services/tracking_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/features/dashboard/providers/dashboard_provider.dart';
@@ -230,11 +231,14 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
 
     TrackingService().pendingReviewTripId.addListener(_openPendingTrip);
     TrackingService().pendingClassifyTripId.addListener(_openPendingTrip);
+    TrackingService().pendingWorkdayPrompt.addListener(_openWorkdayPrompt);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _resumeTrackingIfNeeded();
       // The app may have been launched by tapping a drive notification.
       _openPendingTrip();
+      _openWorkdayPrompt();
+      unawaited(TrackingHealthService.instance.checkAndAlert());
     });
   }
 
@@ -243,6 +247,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     WidgetsBinding.instance.removeObserver(this);
     TrackingService().pendingReviewTripId.removeListener(_openPendingTrip);
     TrackingService().pendingClassifyTripId.removeListener(_openPendingTrip);
+    TrackingService().pendingWorkdayPrompt.removeListener(_openWorkdayPrompt);
     DatabaseService().onTripsChanged = null;
     super.dispose();
   }
@@ -263,6 +268,14 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
     } else {
       _router.go('/');
     }
+  }
+
+  void _openWorkdayPrompt() {
+    final tracking = TrackingService();
+    if (!tracking.pendingWorkdayPrompt.value) return;
+    tracking.pendingWorkdayPrompt.value = false;
+    if (!DatabaseService().getSettings().hasCompletedOnboarding) return;
+    _router.go('/');
   }
 
   /// True while a [TripEnricher.backfill] pass is running, so resume events
@@ -290,6 +303,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap>
       }
       ref.read(dashboardProvider.notifier).refresh();
       ref.read(tripsProvider.notifier).refresh();
+      unawaited(TrackingHealthService.instance.checkAndAlert());
     }
   }
 

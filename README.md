@@ -6,13 +6,11 @@
 > **Never commit real mileage logs, GPS exports, or trip data — see [Data privacy policy](#data-privacy--public-repository-policy) below.**  
 > Read `AGENTS.md` and `PORTFOLIO_PUBLIC_ONLY.md` before contributing or using AI tools in this repo.
 
-**Automatic background mileage tracking. Professional IRS-ready reports. Half the price of MileIQ.**
+**Automatic background mileage tracking. Private by default. Open source.**
 
-MileMaid runs silently in the background, detects every drive using smart motion + GPS, and produces clean, multi-page PDF reports you can hand to your accountant.
+MileMaid runs quietly in the background, detects every drive, and keeps the log on your phone. No account, no ads, and no data selling.
 
-No buttons to press. No subscriptions to MileIQ's $14/month.
-
-**Pricing:** $4.99/month or $49/year (or $9/month for the premium tier with priority support & future cloud sync).
+Tracking and classifying drives is free. Tax-ready PDF and CSV reports and cloud sync come with MileMaid Pro.
 
 ---
 
@@ -49,10 +47,10 @@ MileMaid tracks **where you drive**. That data is personal and often legally sen
 
 ## Why MileMaid?
 
-- **Cheaper:** $4.99/mo or $49/yr vs MileIQ's $14/mo or $130/yr.
+- **Private by default:** Drives are stored on the phone. Nothing is uploaded unless you subscribe and sign in to turn on cloud sync. See [PRIVACY.md](PRIVACY.md).
+- **Open source:** Every claim about what the app does with your location can be checked in this repository.
 - **Automatic:** True passive tracking. Trip starts when you drive >5 mph for 90 seconds. Ends when stopped for 4 minutes.
-- **IRS-friendly reports:** Beautiful, multi-page PDFs with summary, full trip log, category breakdown, and proper disclaimers.
-- **Private by design:** Everything stored locally with Hive. Export or delete your data anytime.
+- **Tax-ready reports:** Multi-page PDFs with summary, full trip log, category breakdown, and proper disclaimers.
 - **Native feel:** Smooth maps, live trip card, category chips, 7-day charts, and fast search.
 
 ## Key Features
@@ -66,21 +64,27 @@ MileMaid tracks **where you drive**. That data is personal and often legally sen
 - Editable purpose, notes, vehicle, odometer
 - Dashboard with business miles this month + estimated deduction
 - 7-day mileage line chart + recent activity
-- Professional PDF export (cover + summary + detailed table)
-- CSV export
+- Professional PDF export (cover + summary + detailed table) with MileMaid Pro
+- CSV export with MileMaid Pro
+- Cloud sync across phones with MileMaid Pro
 - Multi-vehicle support
 - IRS standard mileage rate applied by trip date (72.5¢ Jan–Jun 2026, 76¢ from Jul 1, 2026), or a custom rate
 - One-tap "Mark as Business" and "Duplicate as Return Trip"
+- Home-based workday grouping: leave Home, drive, return Home → one “all business?” prompt
+- Tracking health: after two weekdays with no drives, a push (and email if signed in) warns that mileage may have stopped
 
-## Pricing & Plans
+## Free and Pro
 
-| Plan          | Price          | What's Included                          |
-|---------------|----------------|------------------------------------------|
-| **Starter**   | Free           | Basic tracking, limited trips, watermarked PDFs |
-| **Pro**       | $4.99/mo or $49/yr | Unlimited trips, full professional PDFs, all exports, more vehicles |
-| **Premium**   | $9/mo or $89/yr  | Everything in Pro + priority support, early access to cloud backup & sync |
+| | Free | MileMaid Pro |
+|---|---|---|
+| Automatic background tracking, unlimited drives | Yes | Yes |
+| Swipe to classify, purposes, places, vehicles | Yes | Yes |
+| Dashboard, trip history, deduction estimate | Yes | Yes |
+| Export All Data (JSON) and delete everything | Yes | Yes |
+| PDF and CSV reports | Preview only | Yes |
+| Cloud sync and restore on a new phone | No | Yes |
 
-*Prices subject to change. Annual plans save ~18%.*
+MileMaid Pro is a monthly or yearly App Store subscription. The app shows the current price from the App Store; no price is written into the code.
 
 ## Important Legal Disclaimer
 
@@ -96,7 +100,7 @@ MileMaid is a **tool to help you record your mileage**. It is not tax advice.
 1. Download MileMaid from the App Store / Google Play (coming soon).
 2. Complete the short onboarding and grant "Always" location permission (required for automatic tracking when your phone is locked).
 3. Drive normally. Trips will appear automatically.
-4. Review, classify (Business/Personal/etc.), and export professional PDFs whenever you need them.
+4. Review and classify (Business/Personal/etc.). Export PDF and CSV reports with MileMaid Pro.
 
 This project is open source and available as a portfolio piece. See the "For Developers" section below for technical details.
 
@@ -107,14 +111,14 @@ This is a complete, production-grade Flutter application built as a high-fidelit
 ### Tech Stack & Architecture
 - Flutter 3.29+ + Material 3
 - State: Riverpod + riverpod_annotation + Freezed + code generation
-- Local persistence: Hive (fully offline-first, zero backend)
+- Local persistence: Hive (offline-first; the optional cloud sync uses Firebase Auth and Firestore)
 - Background location: `geolocator` + `flutter_foreground_task` (persistent Android service + iOS background modes)
 - Intelligent auto trip detection (speed + time + distance heuristics)
 - Mapping: google_maps_flutter with polylines, markers, and fit-bounds
 - Reports: `pdf` + `printing` package — multi-page IRS-style PDFs (cover, summary stats, detailed table, disclaimers)
 - Charts: fl_chart (line + pie)
 - Navigation: go_router
-- Monetization scaffolding: in_app_purchase (currently disabled for App Store compliance — see AppConfig)
+- Subscriptions: in_app_purchase on StoreKit 2 (`PurchaseService`); the App Store is the source of truth and no server is involved
 
 ### What This Project Demonstrates
 - Real production background location tracking that survives app termination and phone restarts
@@ -136,12 +140,27 @@ The iOS bundle identifier is `com.zerodelta.milemaid` and the Android package is
 
 See commit history for the original detailed blueprint and architecture decisions.
 
-### Account backup and Google sign-in setup
+### MileMaid Pro (subscriptions)
 
-Signing in (Apple, Google, or email) backs up trips, saved places, vehicles,
-and trip purposes to the user's own Firestore documents
-(`users/{uid}/...`, see `firestore.rules`). Signing in on another phone
-restores them. Settings → Export All Data shares a JSON copy.
+Reports and cloud sync are unlocked by an auto-renewable subscription. The
+two product ids live in `lib/core/config/app_config.dart`
+(`com.zerodelta.milemaid.pro.annual` and `.pro.monthly`) and must exist in one
+subscription group in App Store Connect. Forks should use their own ids.
+
+To build with every feature unlocked and no upsell UI (for a fork or a
+personal build), set `"MONETIZATION_ENABLED": "false"` in
+`config/secrets.json`.
+
+### Cloud sync and Google sign-in setup
+
+With MileMaid Pro active, signing in (Apple, Google, or email) saves trips,
+saved places, vehicles, and trip purposes to the user's own Firestore
+documents (`users/{uid}/...`, see `firestore.rules`). Signing in on another
+phone restores them. Settings → Export All Data shares a JSON copy and is
+always free.
+
+A build made without the Firebase values in `config/secrets.json` runs
+local-only: accounts and cloud sync are hidden.
 
 Google sign-in only works in builds compiled with an OAuth client ID:
 
@@ -165,10 +184,23 @@ An earlier Google Drive backup (`BackupService`, `DriveBackupStore`) is still
 in the source and covered by tests, but it is not reachable from the app. No
 client IDs, tokens, or backup data are committed to this repository.
 
+### Tracking-health email (optional)
+
+When two weekdays pass with no logged drive, a signed-in user gets a doc in
+`users/{uid}/mail_outbox`. Deploy `functions/` with a Resend API key to turn
+those docs into email:
+
+```
+cd functions && npm i && npm run build
+firebase functions:secrets:set RESEND_API_KEY
+firebase functions:secrets:set MILEMAID_FROM_EMAIL
+firebase deploy --only functions
+```
+
+Push alerts still fire on-device without this deploy.
+
 ## Roadmap
 
-- In-app subscriptions (Pro / Premium)
-- Cloud sync option (optional, encrypted)
 - Smarter auto-categorization suggestions
 - Apple Watch / CarPlay integration
 - Better route replay animation
@@ -184,12 +216,6 @@ This project is also intended as a portfolio piece demonstrating strong Flutter 
 
 MIT License — see [LICENSE](LICENSE) file.
 
-## License
-
-MIT License — see [LICENSE](LICENSE) file.
-
 ---
 
-**MileMaid** — Drive. We track. For less.
-
-*Not affiliated with MileIQ.*
+**MileMaid** — Drive. We track. It stays yours.

@@ -23,7 +23,7 @@ class TripEnricher {
   final Set<String> _triedTripIds = {};
 
   static final TripEnricher instance = TripEnricher(
-    places: () => DatabaseService().getSettings().namedLocations,
+    places: () => DatabaseService().getAllLocations(),
     lookup: PlatformAddressLookup(),
   );
 
@@ -32,20 +32,23 @@ class TripEnricher {
   /// - Empty route: returned unchanged.
   /// - Start = first route point, end = last.
   /// - An existing non-null address is kept; otherwise the matched place's
-  ///   stored [NamedLocation.address] wins, else the geocoder is asked.
+  ///   stored [NamedLocation.address] wins, else the geocoder is asked when
+  ///   [lookupAddresses] is true.
   /// - Never changes category, purpose, or isConfirmed.
-  Future<Trip> enrich(Trip t) async {
+  Future<Trip> enrich(Trip t, {bool lookupAddresses = true}) async {
     if (t.routePoints.isEmpty) return t;
 
     final start = await _endpoint(
       t.startLocationId,
       t.startAddress,
       t.routePoints.first,
+      lookupAddresses: lookupAddresses,
     );
     final end = await _endpoint(
       t.endLocationId,
       t.endAddress,
       t.routePoints.last,
+      lookupAddresses: lookupAddresses,
     );
 
     return t.copyWith(
@@ -59,8 +62,9 @@ class TripEnricher {
   Future<(String?, String?)> _endpoint(
     String? existingId,
     String? existingAddress,
-    LatLngPoint point,
-  ) async {
+    LatLngPoint point, {
+    required bool lookupAddresses,
+  }) async {
     final matched = matchLocation(
       point.latitude,
       point.longitude,
@@ -73,7 +77,7 @@ class TripEnricher {
       address = existingAddress;
     } else if (matched?.address != null && matched!.address!.isNotEmpty) {
       address = matched.address;
-    } else {
+    } else if (lookupAddresses) {
       address = await lookup.addressFor(point.latitude, point.longitude);
     }
 

@@ -13,8 +13,10 @@ import 'package:milemaid/core/services/auto_classifier.dart';
 import 'package:milemaid/core/services/database_service.dart';
 import 'package:milemaid/core/services/location_service.dart';
 import 'package:milemaid/core/services/place_matcher.dart';
+import 'package:milemaid/core/services/tracking_health_service.dart';
 import 'package:milemaid/core/services/trip_enricher.dart';
 import 'package:milemaid/core/services/trip_sync_service.dart';
+import 'package:milemaid/core/services/workday_session_service.dart';
 import 'package:milemaid/core/utils/date_helpers.dart';
 import 'package:milemaid/core/utils/distance_calculator.dart';
 import 'package:milemaid/core/utils/trip_detector.dart';
@@ -64,6 +66,9 @@ class TrackingService {
   /// Set when the user taps the notification's Edit button: open the trip.
   final ValueNotifier<String?> pendingReviewTripId = ValueNotifier(null);
 
+  /// Set when the user taps the return-Home workday notification.
+  final ValueNotifier<bool> pendingWorkdayPrompt = ValueNotifier(false);
+
   FlutterLocalNotificationsPlugin? _notifications;
 
   bool get isTracking => _isTracking;
@@ -72,6 +77,18 @@ class TrackingService {
   Future<void> initialize() async {
     await _initNotifications();
     await _initForegroundTask();
+    WorkdaySessionService.instance.attachNotifications(_notifications);
+    WorkdaySessionService.instance.loadPending();
+    TrackingHealthService.instance.attachNotifications(_notifications);
+  }
+
+  /// Asks to show "drive detected" alerts. Called once onboarding has
+  /// explained what the app does.
+  Future<void> requestNotificationPermission() async {
+    await _notifications
+        ?.resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
   }
 
   Future<void> _initNotifications() async {
@@ -84,10 +101,12 @@ class TrackingService {
     const foreground = <DarwinNotificationActionOption>{
       DarwinNotificationActionOption.foreground,
     };
+    // Permission is asked for at the end of onboarding
+    // (requestNotificationPermission), never at cold launch.
     final iosInit = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
       notificationCategories: <DarwinNotificationCategory>[
         DarwinNotificationCategory(
           tripCategoryId,
@@ -133,7 +152,18 @@ class TrackingService {
   }
 
   Future<void> _handleNotificationResponse(NotificationResponse response) async {
-    final tripId = _tripIdFromPayload(response.payload);
+    final payload = response.payload;
+    if (payload == WorkdaySessionService.payloadOpen) {
+      pendingWorkdayPrompt.value = true;
+      return;
+    }
+    if (payload == TrackingHealthService.payloadOpen) {
+      // Open the home screen so the user can see tracking status.
+      pendingClassifyTripId.value = null;
+      return;
+    }
+
+    final tripId = _tripIdFromPayload(payload);
     if (tripId == null) return;
 
     switch (response.actionId) {
@@ -245,6 +275,7 @@ class TrackingService {
   }
 
   Future<void> _startEngine() async {
+    unawaited(TrackingHealthService.instance.markTrackingEnabled());
     // Start the Android foreground service (shows persistent notification).
     // A failure here must not stop location tracking itself.
     try {
@@ -267,6 +298,7 @@ class TrackingService {
 
     _isTracking = true;
     debugPrint('TrackingService: STARTED');
+    unawaited(TrackingHealthService.instance.checkAndAlert());
   }
 
   Future<void> _startPositionStream() async {
@@ -340,31 +372,44 @@ class TrackingService {
     );
 
     // Auto-classify from Work Hours / Named Locations before the drive hits
-    // the review queue (MileIQ-style), then enrich place ids / addresses while
-    // the geocoder opt-in is on. A 6 s timeout means a slow geocoder never
-    // loses a drive.
+    // the review queue (MileIQ-style), then always match named places (Home
+    // detection needs place ids). Address lookup stays opt-in. A 6 s timeout
+    // means a slow geocoder never loses a drive.
     final settings = _db.getSettings();
+    final places = _db.getAllLocations();
     final autoCat = AutoClassifier().classify(
       startTime: start,
       startLat: points.isEmpty ? 0.0 : points.first.latitude,
       startLng: points.isEmpty ? 0.0 : points.first.longitude,
       workHours: settings.workHours,
-      namedLocations: settings.namedLocations,
+      namedLocations: places,
     );
     var toSave = autoCat != null
         ? trip.copyWith(category: autoCat, isConfirmed: true)
         : trip;
 
-    if (settings.geocodingEnabled && points.length >= 2) {
+    if (points.length >= 2) {
       toSave = await TripEnricher.instance
-          .enrich(toSave)
+          .enrich(toSave, lookupAddresses: settings.geocodingEnabled)
           .timeout(const Duration(seconds: 6), onTimeout: () => toSave);
     }
 
     await _db.saveTrip(toSave);
     unawaited(TripSyncService.instance.upsert(toSave));
+    unawaited(TrackingHealthService.instance.recordActivity(toSave.endTime));
 
-    if (settings.notificationsEnabled) {
+    final workday = await WorkdaySessionService.instance.considerTrip(
+      toSave,
+      notificationsEnabled: settings.notificationsEnabled,
+    );
+
+    // Per-trip classify alert is skipped when the return-Home prompt covers
+    // this drive — one ask for the whole loop is enough.
+    final coveredByWorkday = workday != null &&
+        workday.unconfirmed.any((t) => t.id == toSave.id);
+    if (settings.notificationsEnabled &&
+        !toSave.isConfirmed &&
+        !coveredByWorkday) {
       await _showTripEndedNotification(toSave);
     }
 
@@ -411,9 +456,7 @@ class TrackingService {
     final endLabel = placeLabel(
       trip.endLocationId,
       trip.endAddress,
-      {
-        for (final place in _db.getSettings().namedLocations) place.id: place,
-      },
+      locationsById(_db.getAllLocations()),
     );
     if (trip.endLocationId != null) {
       body = '${trip.distanceMiles.toStringAsFixed(1)} mi drive to $endLabel. Tap to classify.';

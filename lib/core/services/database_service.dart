@@ -68,7 +68,7 @@ class DatabaseService {
       );
       await _vehicles.put(v.id, jsonEncode(v.toJson()));
     }
-    if (_settings.isEmpty) {
+    if (!_settings.containsKey('main')) {
       await _settings.put('main', jsonEncode(const UserSettings().toJson()));
     }
     if (_purposes.isEmpty) {
@@ -76,8 +76,7 @@ class DatabaseService {
     }
   }
 
-  /// Generic starter purposes; Tim adds his own on the phone. Seeded only
-  /// when the box is empty.
+  /// Generic starter purposes, seeded only when the box is empty.
   Future<void> _seedDefaultPurposes() async {
     for (var i = 0; i < defaultPurposes.length; i++) {
       final (name, category) = defaultPurposes[i];
@@ -204,6 +203,29 @@ class DatabaseService {
   Future<void> saveBackupState(BackupState state) =>
       _settings.put(_backupStateKey, jsonEncode(state.toJson()));
 
+  // PRO ENTITLEMENT
+  // Last subscription state StoreKit reported, so paid features are right at
+  // launch before the store answers. Kept apart from UserSettings so a
+  // settings save can never overwrite it.
+  static const String _proEntitlementKey = 'pro_entitlement';
+
+  bool getProEntitlement() => _settings.get(_proEntitlementKey) == 'true';
+
+  Future<void> saveProEntitlement(bool active) =>
+      _settings.put(_proEntitlementKey, active.toString());
+
+  /// Opaque JSON blobs (workday prompt, tracking-health prefs) kept beside
+  /// UserSettings so a settings form save cannot wipe them.
+  String? readMeta(String key) => _settings.get(key);
+
+  Future<void> writeMeta(String key, String? value) async {
+    if (value == null) {
+      await _settings.delete(key);
+    } else {
+      await _settings.put(key, value);
+    }
+  }
+
   // MERGE LOOKUPS (used by BackupService.mergeSnapshot; add-only, never
   // overwrite).
   bool hasTrip(String id) => _trips.containsKey(id);
@@ -213,11 +235,16 @@ class DatabaseService {
 
   // PRIVACY
   Future<void> clearAllData() async {
+    // Erasing the user's data must not erase what they paid for.
+    final entitlement = _settings.get(_proEntitlementKey);
     await _trips.clear();
     await _vehicles.clear();
     await _settings.clear();
     await _locations.clear();
     await _purposes.clear();
+    if (entitlement != null) {
+      await _settings.put(_proEntitlementKey, entitlement);
+    }
     await _seedDefaultsIfNeeded();
   }
 

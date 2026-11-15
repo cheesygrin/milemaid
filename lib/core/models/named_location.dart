@@ -16,6 +16,9 @@ class NamedLocation {
 
   /// Free-text purpose applied when the user classifies a trip at this place.
   final String? defaultPurpose;
+
+  /// The place that opens and closes a workday session (leave → return).
+  final bool isHome;
   final DateTime createdAt;
 
   const NamedLocation({
@@ -27,6 +30,7 @@ class NamedLocation {
     this.address,
     this.defaultCategory,
     this.defaultPurpose,
+    this.isHome = false,
     required this.createdAt,
   });
 
@@ -39,6 +43,7 @@ class NamedLocation {
     String? address,
     TripCategory? defaultCategory,
     String? defaultPurpose,
+    bool? isHome,
     DateTime? createdAt,
   }) {
     return NamedLocation(
@@ -50,6 +55,7 @@ class NamedLocation {
       address: address ?? this.address,
       defaultCategory: defaultCategory ?? this.defaultCategory,
       defaultPurpose: defaultPurpose ?? this.defaultPurpose,
+      isHome: isHome ?? this.isHome,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -63,6 +69,7 @@ class NamedLocation {
         'address': address,
         'defaultCategory': defaultCategory?.name,
         'defaultPurpose': defaultPurpose,
+        'isHome': isHome,
         'createdAt': createdAt.toIso8601String(),
       };
 
@@ -80,6 +87,7 @@ class NamedLocation {
           .where((c) => c.name == (json['defaultCategory'] as String?))
           .firstOrNull,
       defaultPurpose: json['defaultPurpose'] as String?,
+      isHome: json['isHome'] as bool? ?? false,
       createdAt: DateTime.parse(
           json['createdAt'] as String? ?? DateTime.now().toIso8601String()),
     );

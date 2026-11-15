@@ -42,6 +42,13 @@ class Trips extends _$Trips {
     );
   }
 
+  /// Classify every id in [ids] as [category] (return-Home workday prompt).
+  Future<void> classifyTrips(List<String> ids, TripCategory category) async {
+    for (final id in ids) {
+      await classifyTrip(id, category);
+    }
+  }
+
   /// Revert a swipe classification (Undo). Restores the prior category and
   /// returns the trip to the pending review queue.
   Future<void> unclassifyTrip(String id, TripCategory category) async {

@@ -382,7 +382,13 @@ void main() {
       expect(back.address, '1 Depot Way, Springfield');
       expect(back.defaultCategory, isNull);
       expect(back.defaultPurpose, 'Client visit');
+      expect(back.isHome, isFalse);
       expect(back.createdAt, _createdAt);
+    });
+
+    test('round-trips isHome', () {
+      final place = _place(id: 'home', name: 'Home').copyWith(isHome: true);
+      expect(NamedLocation.fromJson(place.toJson()).isHome, isTrue);
     });
 
     test('tolerant of missing optional keys', () {
@@ -395,6 +401,7 @@ void main() {
       expect(back.radiusMeters, 150);
       expect(back.address, isNull);
       expect(back.defaultCategory, isNull);
+      expect(back.isHome, isFalse);
       expect(back.createdAt, isA<DateTime>());
     });
   });
